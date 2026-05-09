@@ -1,4 +1,4 @@
-# Pixel Mayhem — MVP
+# GTAzinho — MVP
 
 GTA-1 inspired top-down arcade in browser/mobile. Drive, shoot, run from cops.
 
