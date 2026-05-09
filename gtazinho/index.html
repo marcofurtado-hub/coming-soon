@@ -20,24 +20,41 @@
   #hud-stats .label{color:#bbb;letter-spacing:0.08em;text-transform:uppercase;font-size:9px}
   #hud-stats .v-cash{color:#9EF67C;font-weight:700;font-size:16px}
   #hud-stats .v-jobs{color:#FFB347;font-weight:700;font-size:16px}
+  #hp-bar{width:100%;height:8px;background:rgba(255,255,255,0.15);border-radius:4px;overflow:hidden;margin-top:4px}
+  #hp-fill{height:100%;background:linear-gradient(90deg,#E94B5C,#FFB347);transition:width .15s}
 
-  /* HUGE mission banner */
-  #mission{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.75);backdrop-filter:blur(8px);border:2px solid #FFD24A;border-radius:14px;padding:14px 26px;color:#fff;z-index:10;text-align:center;min-width:340px;max-width:90vw}
+  #mission{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.78);backdrop-filter:blur(8px);border:2px solid #FFD24A;border-radius:14px;padding:12px 26px;color:#fff;z-index:10;text-align:center;min-width:360px;max-width:92vw}
+  #mission .row1{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:2px}
+  #mission .num{background:#FFD24A;color:#000;font-weight:800;border-radius:6px;padding:2px 8px;font-size:11px;letter-spacing:0.08em;font-family:"SF Mono",Menlo,monospace}
   #mission .label{font-size:10px;color:#FFD24A;letter-spacing:0.18em;text-transform:uppercase;font-weight:700}
-  #mission .text{font-size:18px;margin-top:4px;font-weight:600;line-height:1.3}
-  #mission .meta{display:flex;justify-content:center;gap:18px;margin-top:8px;font-family:"SF Mono",Menlo,monospace;font-size:11px}
+  #mission .text{font-size:18px;margin-top:2px;font-weight:600;line-height:1.3}
+  #mission .meta{display:flex;justify-content:center;gap:18px;margin-top:6px;font-family:"SF Mono",Menlo,monospace;font-size:11px}
   #mission .meta .reward{color:#9EF67C}
   #mission .meta .dist{color:#FFB347}
+  #mission .meta .timer{color:#E94B5C;font-weight:700}
+  #mission .meta .timer.ok{color:#9EF67C}
 
   #speed{position:fixed;bottom:24px;right:24px;background:rgba(0,0,0,0.6);backdrop-filter:blur(8px);border:1px solid rgba(255,179,71,0.5);border-radius:10px;padding:8px 14px;font-family:"SF Mono",Menlo,monospace;font-size:22px;font-weight:700;color:#FFB347;z-index:10;text-align:right}
   #speed small{display:block;font-size:9px;color:#bbb;letter-spacing:0.1em;margin-top:1px;font-weight:400}
 
-  /* off-screen edge arrow */
   #edge-arrow{position:fixed;width:60px;height:60px;pointer-events:none;z-index:9;display:none;transform:translate(-50%,-50%)}
   #edge-arrow svg{width:100%;height:100%;filter:drop-shadow(0 0 12px rgba(255,210,74,0.8))}
 
   #toast{position:fixed;top:30%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,0.85);backdrop-filter:blur(12px);border:2px solid #9EF67C;border-radius:14px;padding:18px 32px;font-weight:700;color:#9EF67C;letter-spacing:0.08em;text-transform:uppercase;font-size:18px;z-index:20;opacity:0;pointer-events:none;transition:opacity .25s;text-align:center}
   #toast.on{opacity:1}
+  #toast.bad{border-color:#E94B5C;color:#E94B5C}
+
+  #briefing{position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:50;display:none;align-items:center;justify-content:center}
+  #briefing.on{display:flex}
+  #briefing .panel{background:#1a1a22;border:2px solid #FFD24A;border-radius:14px;padding:30px 36px;color:#fff;max-width:480px;text-align:center}
+  #briefing h2{color:#FFD24A;font-size:14px;letter-spacing:0.18em;margin-bottom:8px;text-transform:uppercase}
+  #briefing h1{font-size:30px;margin-bottom:12px}
+  #briefing p{color:#ccc;line-height:1.5;margin-bottom:18px;font-size:14px}
+  #briefing .stats{display:flex;justify-content:center;gap:24px;margin-bottom:20px;font-family:"SF Mono",Menlo,monospace}
+  #briefing .stats span{display:block;color:#888;font-size:10px;letter-spacing:0.1em;text-transform:uppercase}
+  #briefing .stats b{color:#9EF67C;font-size:18px;font-weight:700}
+  #briefing button{background:#FFD24A;color:#000;border:none;border-radius:8px;padding:10px 24px;font-weight:700;font-size:14px;cursor:pointer;letter-spacing:0.1em;text-transform:uppercase;font-family:inherit}
+  #briefing button:hover{background:#FFB347}
 </style>
 </head>
 <body>
@@ -52,13 +69,15 @@
 <div id="hud-stats">
   <div class="row"><span class="label">cash</span><span class="v-cash" id="cash">$0</span></div>
   <div class="row"><span class="label">jobs</span><span class="v-jobs" id="jobs">0</span></div>
+  <div><div class="label">hp</div><div id="hp-bar"><div id="hp-fill" style="width:100%"></div></div></div>
 </div>
 
 <div id="mission">
-  <div class="label">missão</div>
+  <div class="row1"><span class="num" id="mission-num">#1</span><span class="label">missão</span></div>
   <div class="text" id="mission-text">…</div>
   <div class="meta">
     <span class="dist" id="mission-dist"></span>
+    <span class="timer" id="mission-timer"></span>
     <span class="reward" id="mission-reward"></span>
   </div>
 </div>
@@ -72,6 +91,20 @@
 </div>
 
 <div id="toast"></div>
+
+<div id="briefing">
+  <div class="panel">
+    <h2>Missão <span id="brf-num">1</span></h2>
+    <h1 id="brf-title">DELIVERY</h1>
+    <p id="brf-desc">Pega o pacote no marker amarelo e entrega no verde. Sem pressão.</p>
+    <div class="stats">
+      <div><span>recompensa</span><b id="brf-reward">$300</b></div>
+      <div><span>tempo</span><b id="brf-time">∞</b></div>
+      <div><span>perseguidores</span><b id="brf-pursuers">0</b></div>
+    </div>
+    <button id="brf-go">COMEÇAR</button>
+  </div>
+</div>
 
 <script type="importmap">
 { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
@@ -105,7 +138,7 @@ sun.shadow.camera.top = 100; sun.shadow.camera.bottom = -100;
 sun.shadow.camera.near = 1; sun.shadow.camera.far = 200;
 scene.add(sun);
 
-// ============= ground & city =============
+// ============= world =============
 const WORLD = 220;
 const ground = new THREE.Mesh(
   new THREE.PlaneGeometry(WORLD*1.5, WORLD*1.5),
@@ -176,7 +209,7 @@ for (let i = 0; i < roadLines.length - 1; i++) {
   }
 }
 
-// ============= car =============
+// ============= car factory =============
 function makeCar(bodyColor, roofColor) {
   const g = new THREE.Group();
   const body = new THREE.Mesh(
@@ -207,67 +240,113 @@ scene.add(player);
 const playerState = {
   pos: new THREE.Vector3(0, 0, 0),
   vel: 0, heading: 0,
-  cash: 0, jobs: 0,
+  hp: 100, cash: 0, jobs: 0,
   radius: 1.6,
+  invuln: 0,
 };
 
 // ============= big arrow above player =============
 const arrow = (() => {
   const g = new THREE.Group();
-  const shaft = new THREE.Mesh(
-    new THREE.BoxGeometry(0.4, 0.4, 2),
-    new THREE.MeshStandardMaterial({ color: 0xFFD24A, emissive: 0xFFD24A, emissiveIntensity: 0.6 })
-  );
+  const shaft = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.4, 2),
+    new THREE.MeshStandardMaterial({ color: 0xFFD24A, emissive: 0xFFD24A, emissiveIntensity: 0.6 }));
   shaft.position.z = 1; g.add(shaft);
-  const head = new THREE.Mesh(
-    new THREE.ConeGeometry(0.9, 1.4, 4),
-    new THREE.MeshStandardMaterial({ color: 0xFFD24A, emissive: 0xFFD24A, emissiveIntensity: 0.6 })
-  );
-  head.rotation.x = Math.PI/2;
-  head.rotation.y = Math.PI/4; // square base aligned
-  head.position.z = 2.7; g.add(head);
+  const head = new THREE.Mesh(new THREE.ConeGeometry(0.9, 1.4, 4),
+    new THREE.MeshStandardMaterial({ color: 0xFFD24A, emissive: 0xFFD24A, emissiveIntensity: 0.6 }));
+  head.rotation.x = Math.PI/2; head.rotation.y = Math.PI/4; head.position.z = 2.7; g.add(head);
   g.position.y = 5;
   scene.add(g);
   return g;
 })();
 
-// ============= mission =============
+// ============= mission progression =============
+function getMissionConfig(n) {
+  // n = 1, 2, 3, ...
+  let title, desc;
+  let timeLimit = 0;        // seconds; 0 = no timer
+  let pursuers = 0;
+  let pursuersShoot = false;
+  let reward = 200 + n * 100;
+  if (n === 1) {
+    title = 'DELIVERY';
+    desc = 'Pega o pacote no marker amarelo e entrega no verde. Sem pressão, é só dirigir.';
+  } else if (n === 2) {
+    title = 'DELIVERY · TIMER';
+    desc = 'Mesmo lance, mas agora tem prazo. Acelera, fera.';
+    timeLimit = 50;
+  } else if (n === 3) {
+    title = 'DELIVERY · CHASE';
+    desc = 'Um carro vermelho vai começar a te perseguir depois que pegar o pacote. Não deixa ele bater em você.';
+    timeLimit = 55;
+    pursuers = 1;
+  } else if (n === 4) {
+    title = 'DELIVERY · CHASE x2';
+    desc = 'Dois perseguidores. Pisa fundo.';
+    timeLimit = 55;
+    pursuers = 2;
+  } else if (n === 5) {
+    title = 'DELIVERY · ARMED';
+    desc = 'Os perseguidores estão atirando agora. Foge.';
+    timeLimit = 60;
+    pursuers = 2;
+    pursuersShoot = true;
+  } else {
+    // 6+: scaling
+    const k = n - 5;
+    title = `DELIVERY · HARDCORE ${k}`;
+    desc = `Mais perseguidores, menos tempo. Boa sorte.`;
+    timeLimit = Math.max(40, 60 - k*2);
+    pursuers = 2 + Math.min(k, 3);
+    pursuersShoot = true;
+  }
+  return { n, title, desc, timeLimit, pursuers, pursuersShoot, reward };
+}
+
 const missionState = {
-  phase: 'pickup', // pickup | dropoff
+  n: 0,
+  cfg: null,
+  phase: 'briefing', // briefing | pickup | dropoff | done
   pickupPos: null, dropoffPos: null,
-  reward: 0, marker: null, markerColor: 0xFFD24A,
+  marker: null,
+  timeLeft: 0,
+  pursuersSpawned: false,
 };
 
 const missionTextEl = document.getElementById('mission-text');
 const missionRewardEl = document.getElementById('mission-reward');
 const missionDistEl = document.getElementById('mission-dist');
+const missionTimerEl = document.getElementById('mission-timer');
+const missionNumEl = document.getElementById('mission-num');
+
+const briefingEl = document.getElementById('briefing');
+const brfNumEl = document.getElementById('brf-num');
+const brfTitleEl = document.getElementById('brf-title');
+const brfDescEl = document.getElementById('brf-desc');
+const brfRewardEl = document.getElementById('brf-reward');
+const brfTimeEl = document.getElementById('brf-time');
+const brfPursuersEl = document.getElementById('brf-pursuers');
+document.getElementById('brf-go').addEventListener('click', startMission);
 
 function clearMarker() {
   if (missionState.marker) { scene.remove(missionState.marker); missionState.marker = null; }
 }
 function spawnMarker(pos, color) {
   const g = new THREE.Group();
-  // ground glow disc
   const disc = new THREE.Mesh(
     new THREE.CircleGeometry(4, 32),
     new THREE.MeshBasicMaterial({ color, transparent:true, opacity:0.45 })
   );
-  disc.rotation.x = -Math.PI/2; disc.position.y = 0.05;
-  g.add(disc);
-  // big hollow ring
+  disc.rotation.x = -Math.PI/2; disc.position.y = 0.05; g.add(disc);
   const ring = new THREE.Mesh(
     new THREE.TorusGeometry(3, 0.4, 8, 24),
     new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.8 })
   );
-  ring.rotation.x = Math.PI/2; ring.position.y = 1.5;
-  g.add(ring);
-  // tall pillar of light
+  ring.rotation.x = Math.PI/2; ring.position.y = 1.5; g.add(ring);
   const beam = new THREE.Mesh(
     new THREE.CylinderGeometry(2.5, 2.5, 30, 24, 1, true),
     new THREE.MeshBasicMaterial({ color, transparent:true, opacity:0.18, side: THREE.DoubleSide })
   );
   beam.position.y = 15; g.add(beam);
-  // smaller inner beam, more solid
   const innerBeam = new THREE.Mesh(
     new THREE.CylinderGeometry(0.6, 0.6, 30, 12, 1, true),
     new THREE.MeshBasicMaterial({ color, transparent:true, opacity:0.5, side: THREE.DoubleSide })
@@ -282,44 +361,123 @@ function pickRoadPos() {
   const z = roadLines[Math.floor(Math.random()*roadLines.length)] + (Math.random()-0.5) * 4;
   return new THREE.Vector3(x, 0, z);
 }
-function newMission() {
+
+// ============= pursuer system =============
+const pursuers = []; // {mesh, pos, vel, heading, hp, shootCd, dead, radius}
+const bullets = [];
+
+function clearPursuers() {
+  for (const p of pursuers) scene.remove(p.mesh);
+  pursuers.length = 0;
+  for (const b of bullets) scene.remove(b.mesh);
+  bullets.length = 0;
+}
+function spawnPursuer(pos) {
+  const car = makeCar(0xC73E1D, 0x000);
+  car.position.copy(pos);
+  scene.add(car);
+  pursuers.push({
+    mesh: car, pos: pos.clone(),
+    vel: 0, heading: 0,
+    hp: 100, shootCd: 1.5 + Math.random(), dead: false, radius: 1.6
+  });
+}
+
+const bulletGeo = new THREE.SphereGeometry(0.18, 6, 6);
+const bulletMat = new THREE.MeshBasicMaterial({ color: 0xE94B5C });
+function spawnBullet(origin, dir) {
+  const mesh = new THREE.Mesh(bulletGeo, bulletMat);
+  mesh.position.copy(origin); scene.add(mesh);
+  bullets.push({ mesh, pos: origin.clone(), dir: dir.clone().normalize(), life: 1.4 });
+}
+
+// ============= briefing & flow =============
+function showBriefing(cfg) {
+  brfNumEl.textContent = cfg.n;
+  brfTitleEl.textContent = cfg.title;
+  brfDescEl.textContent = cfg.desc;
+  brfRewardEl.textContent = '$' + cfg.reward;
+  brfTimeEl.textContent = cfg.timeLimit ? cfg.timeLimit + 's' : '∞';
+  brfPursuersEl.textContent = cfg.pursuers + (cfg.pursuersShoot ? ' (armado)' : '');
+  briefingEl.classList.add('on');
+  missionState.phase = 'briefing';
+  missionTextEl.textContent = 'Briefing — clica COMEÇAR';
+  missionDistEl.textContent = '';
+  missionTimerEl.textContent = '';
+  missionRewardEl.textContent = '$' + cfg.reward;
+  missionNumEl.textContent = '#' + cfg.n;
+}
+function startMission() {
+  briefingEl.classList.remove('on');
+  const cfg = missionState.cfg;
   let p, d;
   do { p = pickRoadPos(); } while (p.distanceTo(playerState.pos) < 18);
   do { d = pickRoadPos(); } while (d.distanceTo(p) < 30);
-  missionState.phase = 'pickup';
   missionState.pickupPos = p;
   missionState.dropoffPos = d;
-  missionState.reward = 200 + Math.floor(Math.random()*300);
-  missionState.markerColor = 0xFFD24A;
+  missionState.phase = 'pickup';
+  missionState.timeLeft = cfg.timeLimit;
+  missionState.pursuersSpawned = false;
   clearMarker();
   missionState.marker = spawnMarker(p, 0xFFD24A);
   missionTextEl.textContent = '🟡 Pega o pacote';
-  missionRewardEl.textContent = `$${missionState.reward}`;
+}
+function nextMission() {
+  missionState.n += 1;
+  missionState.cfg = getMissionConfig(missionState.n);
+  clearMarker(); clearPursuers();
+  showBriefing(missionState.cfg);
+}
+function failMission(reason) {
+  toast(reason, true);
+  clearMarker(); clearPursuers();
+  playerState.cash = Math.max(0, Math.floor(playerState.cash * 0.8));
+  playerState.hp = 100;
+  // restart same mission
+  setTimeout(() => showBriefing(missionState.cfg), 1200);
+  missionState.phase = 'failed';
 }
 function onPickup() {
   missionState.phase = 'dropoff';
-  missionState.markerColor = 0x9EF67C;
   clearMarker();
   missionState.marker = spawnMarker(missionState.dropoffPos, 0x9EF67C);
   missionTextEl.textContent = '🟢 Entrega o pacote';
   toast('PEGOU O PACOTE');
+  // spawn pursuers now
+  if (!missionState.pursuersSpawned && missionState.cfg.pursuers > 0) {
+    missionState.pursuersSpawned = true;
+    for (let i = 0; i < missionState.cfg.pursuers; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const dist = 22 + Math.random() * 6;
+      const sp = new THREE.Vector3(
+        playerState.pos.x + Math.cos(angle) * dist, 0,
+        playerState.pos.z + Math.sin(angle) * dist
+      );
+      spawnPursuer(sp);
+    }
+    setTimeout(() => toast('!! PERSEGUIDORES'), 400);
+  }
 }
 function onDelivery() {
-  playerState.cash += missionState.reward;
+  playerState.cash += missionState.cfg.reward;
   playerState.jobs += 1;
-  toast(`+$${missionState.reward}`);
-  clearMarker();
-  setTimeout(newMission, 1100);
-  missionState.phase = 'idle';
-  missionTextEl.textContent = 'Procurando próxima missão…';
-  missionRewardEl.textContent = '';
-  missionDistEl.textContent = '';
+  toast(`+$${missionState.cfg.reward}  ENTREGUE`);
+  clearMarker(); clearPursuers();
+  setTimeout(nextMission, 1500);
+  missionState.phase = 'done';
+  missionTextEl.textContent = 'Próxima missão chegando…';
+  missionTimerEl.textContent = '';
 }
 
 // ============= toast =============
 const toastEl = document.getElementById('toast');
 let toastT = 0;
-function toast(msg) { toastEl.textContent = msg; toastEl.classList.add('on'); toastT = 1.4; }
+function toast(msg, bad=false) {
+  toastEl.textContent = msg;
+  toastEl.classList.toggle('bad', !!bad);
+  toastEl.classList.add('on');
+  toastT = 1.6;
+}
 
 // ============= input =============
 const keys = {};
@@ -341,24 +499,28 @@ function blockedAt(x, z, radius) {
   return false;
 }
 
-// ============= HUD sync =============
+// ============= HUD =============
 const cashEl = document.getElementById('cash');
 const jobsEl = document.getElementById('jobs');
 const speedEl = document.getElementById('speed');
+const hpEl = document.getElementById('hp-fill');
 const edgeArrowEl = document.getElementById('edge-arrow');
-
 function syncHUD() {
   cashEl.textContent = '$' + playerState.cash;
   jobsEl.textContent = playerState.jobs;
+  hpEl.style.width = Math.max(0, playerState.hp) + '%';
 }
 
 // ============= main loop =============
 const clock = new THREE.Clock();
 let elapsed = 0;
-newMission();
+nextMission();
 
 function update(dt) {
   elapsed += dt;
+
+  // Don't update gameplay during briefing
+  const playing = missionState.phase === 'pickup' || missionState.phase === 'dropoff';
 
   // ---- driving ----
   const accel = (keys['KeyW']||keys['ArrowUp']) ? 22 : 0;
@@ -386,7 +548,7 @@ function update(dt) {
   player.position.copy(playerState.pos);
   player.rotation.y = Math.PI - playerState.heading;
 
-  // ---- mission marker check ----
+  // ---- mission ----
   let target = null;
   if (missionState.phase === 'pickup') target = missionState.pickupPos;
   else if (missionState.phase === 'dropoff') target = missionState.dropoffPos;
@@ -401,51 +563,54 @@ function update(dt) {
   } else {
     missionDistEl.textContent = '';
   }
+
+  // timer
+  if (playing && missionState.cfg.timeLimit > 0) {
+    missionState.timeLeft -= dt;
+    if (missionState.timeLeft <= 0) {
+      missionState.timeLeft = 0;
+      failMission('TEMPO ESGOTADO');
+    }
+    const t = Math.ceil(missionState.timeLeft);
+    missionTimerEl.textContent = `⏱ ${t}s`;
+    missionTimerEl.classList.toggle('ok', t > 15);
+  } else {
+    missionTimerEl.textContent = '';
+  }
+
+  // marker pulse + spin
   if (missionState.marker) {
     missionState.marker.rotation.y += dt * 1.2;
-    // pulse the ring
     const s = 1 + Math.sin(elapsed * 4) * 0.08;
     missionState.marker.children[1].scale.set(s, s, s);
   }
 
-  // ---- big floating arrow above player toward target ----
+  // big floating arrow
   arrow.position.set(playerState.pos.x, 5 + Math.sin(elapsed*3)*0.3, playerState.pos.z);
   if (target) {
     const dx = target.x - playerState.pos.x;
     const dz = target.z - playerState.pos.z;
-    const angle = Math.atan2(dx, dz); // 0 = +Z, π/2 = +X
-    arrow.rotation.y = Math.PI - angle; // mesh forward (+Z) → world (sin a, 0, -cos a)... we want world (dx,dz) normalized
-    // Wait: arrow's local +Z maps to world (sin(rotation.y), 0, cos(rotation.y))
-    // we want this to equal (dx, 0, dz) normalized: sin r = dx/L, cos r = dz/L → r = atan2(dx, dz)
     arrow.rotation.y = Math.atan2(dx, dz);
     arrow.visible = true;
   } else {
     arrow.visible = false;
   }
 
-  // ---- off-screen edge arrow ----
+  // edge arrow
   if (target) {
     const v = target.clone().project(camera);
     if (v.x < -1 || v.x > 1 || v.y < -1 || v.y > 1 || v.z > 1) {
-      // off-screen: clamp to edge
-      const cx = (v.x * 0.5 + 0.5) * window.innerWidth;
-      const cy = (-v.y * 0.5 + 0.5) * window.innerHeight;
-      // direction from screen center to target screen pos
-      const sx = window.innerWidth/2, sy = window.innerHeight/2;
-      let dx = cx - sx, dy = cy - sy;
-      // when behind camera (v.z>1), flip
+      const sxc = window.innerWidth/2, syc = window.innerHeight/2;
+      let dx = (v.x*0.5+0.5)*window.innerWidth - sxc;
+      let dy = (-v.y*0.5+0.5)*window.innerHeight - syc;
       if (v.z > 1) { dx = -dx; dy = -dy; }
       const margin = 60;
-      const aspect = (window.innerWidth/2 - margin) / (window.innerHeight/2 - margin);
       const ax = Math.abs(dx), ay = Math.abs(dy);
+      const aspect = (window.innerWidth/2 - margin) / (window.innerHeight/2 - margin);
       let scale;
-      if (ax/ay > aspect) {
-        scale = (window.innerWidth/2 - margin) / ax;
-      } else {
-        scale = (window.innerHeight/2 - margin) / ay;
-      }
-      const ex = sx + dx*scale;
-      const ey = sy + dy*scale;
+      if (ax/ay > aspect) scale = (window.innerWidth/2 - margin) / ax;
+      else scale = (window.innerHeight/2 - margin) / ay;
+      const ex = sxc + dx*scale, ey = syc + dy*scale;
       edgeArrowEl.style.left = ex + 'px';
       edgeArrowEl.style.top = ey + 'px';
       edgeArrowEl.style.transform = `translate(-50%,-50%) rotate(${Math.atan2(dy, dx) - Math.PI/2}rad)`;
@@ -455,6 +620,84 @@ function update(dt) {
     }
   } else {
     edgeArrowEl.style.display = 'none';
+  }
+
+  // ---- pursuers ----
+  if (playerState.invuln > 0) playerState.invuln -= dt;
+  for (const p of pursuers) {
+    if (p.dead) continue;
+    const toP = new THREE.Vector3(playerState.pos.x - p.pos.x, 0, playerState.pos.z - p.pos.z);
+    const dist = toP.length();
+    const desired = Math.atan2(toP.x, -toP.z);
+    let dh = desired - p.heading;
+    while (dh > Math.PI) dh -= Math.PI*2;
+    while (dh < -Math.PI) dh += Math.PI*2;
+    p.heading += Math.sign(dh) * Math.min(Math.abs(dh), dt * 1.6);
+
+    const targetSpeed = playing ? 20 : 0;
+    p.vel += (targetSpeed - p.vel) * dt * 1.0;
+
+    const ef = fwdVec(p.heading);
+    const enx = p.pos.x + ef.x * p.vel * dt;
+    const enz = p.pos.z + ef.z * p.vel * dt;
+    let ecx = p.pos.x, ecz = p.pos.z;
+    if (!blockedAt(enx, ecz, p.radius)) ecx = enx; else p.heading += 0.4;
+    if (!blockedAt(ecx, enz, p.radius)) ecz = enz; else p.heading += 0.4;
+    p.pos.x = ecx; p.pos.z = ecz;
+    p.mesh.position.copy(p.pos);
+    p.mesh.rotation.y = Math.PI - p.heading;
+
+    // ram damage on contact
+    if (dist < playerState.radius + p.radius + 0.4 && playerState.invuln <= 0) {
+      playerState.hp -= 14;
+      playerState.invuln = 0.6;
+      // bounce player off
+      const nrm = toP.clone().normalize();
+      playerState.pos.x -= nrm.x * 1.0;
+      playerState.pos.z -= nrm.z * 1.0;
+      playerState.vel *= -0.4;
+    }
+
+    // shooting (mission 5+)
+    if (missionState.cfg.pursuersShoot && dist < 28 && playing) {
+      p.shootCd -= dt;
+      if (p.shootCd <= 0) {
+        p.shootCd = 1.0 + Math.random()*0.4;
+        const dir = toP.clone().normalize();
+        const origin = p.pos.clone().add(new THREE.Vector3(dir.x*1.5, 1.0, dir.z*1.5));
+        spawnBullet(origin, dir);
+      }
+    }
+  }
+
+  // ---- bullets (enemy only) ----
+  for (let i = bullets.length-1; i >= 0; i--) {
+    const b = bullets[i];
+    b.life -= dt;
+    b.pos.x += b.dir.x * 55 * dt;
+    b.pos.z += b.dir.z * 55 * dt;
+    b.mesh.position.copy(b.pos);
+    let hit = false;
+    const dx = b.pos.x - playerState.pos.x, dz = b.pos.z - playerState.pos.z;
+    if (dx*dx + dz*dz < (playerState.radius+0.4)**2) {
+      if (playerState.invuln <= 0) {
+        playerState.hp -= 8;
+        playerState.invuln = 0.15;
+      }
+      hit = true;
+    }
+    if (hit || b.life <= 0) { scene.remove(b.mesh); bullets.splice(i,1); }
+  }
+
+  // hp regen out of pursuit
+  if (playing && pursuers.length === 0 && playerState.hp < 100) {
+    playerState.hp = Math.min(100, playerState.hp + dt * 6);
+  }
+
+  // dead → fail mission
+  if (playing && playerState.hp <= 0) {
+    playerState.hp = 0;
+    failMission('VOCÊ FOI DESTRUÍDO');
   }
 
   // ---- toast fade ----
