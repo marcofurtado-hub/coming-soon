@@ -535,12 +535,9 @@ function update(dt) {
   // gun rotates locally to face mouse world target
   const aimWorld = new THREE.Vector3(mouse.world.x - playerState.pos.x, 0, mouse.world.z - playerState.pos.z);
   if (aimWorld.lengthSq() > 0.1) {
-    // world angle of aim
-    const wa = Math.atan2(aimWorld.x, -aimWorld.z); // 0 = -Z, +π/2 = +X
-    // local angle = world - heading (since gun is child of player rotated by player.rotation.y = π - heading)
-    // local +Z of gun in world = (sin(playerRot - playerRot? )...) — simpler: set quaternion
-    const localAngle = wa - playerState.heading;
-    gun.rotation.y = localAngle;
+    // player.rotation.y = π - heading, so gun world angle = (π - heading) + gun.rotation.y
+    // we want gun to point at aim → gun world angle = atan2(ax, az)
+    gun.rotation.y = Math.atan2(aimWorld.x, aimWorld.z) - Math.PI + playerState.heading;
   }
   if (gun.userData.flash.material.opacity > 0) {
     gun.userData.flash.material.opacity = Math.max(0, gun.userData.flash.material.opacity - dt*8);
