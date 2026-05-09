@@ -8,68 +8,69 @@
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{height:100%;background:#87CEEB;color:#222;font-family:-apple-system,BlinkMacSystemFont,system-ui,sans-serif;overflow:hidden}
   #app{position:fixed;inset:0}
-  canvas{display:block;cursor:crosshair}
+  canvas{display:block}
 
   #hud-help{position:fixed;top:14px;left:14px;background:rgba(0,0,0,0.6);backdrop-filter:blur(8px);border:1px solid rgba(255,180,80,0.5);border-radius:10px;padding:10px 12px;font-size:11px;line-height:1.55;z-index:10;max-width:260px;color:#fff}
   #hud-help .title{font-weight:700;color:#FFD24A;letter-spacing:0.06em;text-transform:uppercase;font-size:10px;margin-bottom:5px}
   #hud-help kbd{background:rgba(255,255,255,0.15);padding:1px 5px;border-radius:3px;font-family:"SF Mono",Menlo,monospace;font-size:10px;border:1px solid rgba(255,255,255,0.2)}
 
-  #hud-stats{position:fixed;top:14px;right:14px;background:rgba(0,0,0,0.6);backdrop-filter:blur(8px);border:1px solid rgba(255,210,74,0.5);border-radius:10px;padding:10px 14px;font-family:"SF Mono",Menlo,monospace;z-index:10;min-width:210px;color:#fff}
+  #hud-stats{position:fixed;top:14px;right:14px;background:rgba(0,0,0,0.6);backdrop-filter:blur(8px);border:1px solid rgba(255,210,74,0.5);border-radius:10px;padding:10px 14px;font-family:"SF Mono",Menlo,monospace;z-index:10;min-width:220px;color:#fff}
   #hud-stats .row{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:6px;font-size:11px}
   #hud-stats .row:last-child{margin-bottom:0}
   #hud-stats .label{color:#bbb;letter-spacing:0.08em;text-transform:uppercase;font-size:9px}
-  #hud-stats .v-cash{color:#9EF67C;font-weight:700;font-size:14px}
-  #hud-stats .v-score{color:#FFB347;font-weight:700;font-size:14px}
-  #hp-bar{width:100%;height:8px;background:rgba(255,255,255,0.15);border-radius:4px;overflow:hidden;margin-top:4px}
-  #hp-fill{height:100%;background:linear-gradient(90deg,#E94B5C,#FFB347);transition:width .2s}
-  #wanted{display:flex;gap:3px;margin-top:4px}
-  #wanted .star{width:14px;height:14px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.16);border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:9px;color:#444}
-  #wanted .star.on{background:#FFB347;border-color:#FFB347;color:#1a0a00;box-shadow:0 0 8px rgba(255,179,71,0.7)}
+  #hud-stats .v-cash{color:#9EF67C;font-weight:700;font-size:16px}
+  #hud-stats .v-jobs{color:#FFB347;font-weight:700;font-size:16px}
 
-  #mission{position:fixed;bottom:18px;left:18px;background:rgba(0,0,0,0.6);backdrop-filter:blur(8px);border:1px solid rgba(158,246,124,0.55);border-radius:10px;padding:10px 14px;color:#fff;z-index:10;max-width:300px}
-  #mission .label{font-size:9px;color:#9EF67C;letter-spacing:0.12em;text-transform:uppercase;font-weight:700}
-  #mission .text{font-size:13px;margin-top:2px;line-height:1.4}
-  #mission .reward{font-family:"SF Mono",Menlo,monospace;font-size:11px;color:#FFD24A;margin-top:3px}
+  /* HUGE mission banner */
+  #mission{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.75);backdrop-filter:blur(8px);border:2px solid #FFD24A;border-radius:14px;padding:14px 26px;color:#fff;z-index:10;text-align:center;min-width:340px;max-width:90vw}
+  #mission .label{font-size:10px;color:#FFD24A;letter-spacing:0.18em;text-transform:uppercase;font-weight:700}
+  #mission .text{font-size:18px;margin-top:4px;font-weight:600;line-height:1.3}
+  #mission .meta{display:flex;justify-content:center;gap:18px;margin-top:8px;font-family:"SF Mono",Menlo,monospace;font-size:11px}
+  #mission .meta .reward{color:#9EF67C}
+  #mission .meta .dist{color:#FFB347}
 
-  #speed{position:fixed;bottom:18px;right:18px;background:rgba(0,0,0,0.6);backdrop-filter:blur(8px);border:1px solid rgba(255,179,71,0.5);border-radius:10px;padding:8px 14px;font-family:"SF Mono",Menlo,monospace;font-size:22px;font-weight:700;color:#FFB347;z-index:10;text-align:right}
+  #speed{position:fixed;bottom:24px;right:24px;background:rgba(0,0,0,0.6);backdrop-filter:blur(8px);border:1px solid rgba(255,179,71,0.5);border-radius:10px;padding:8px 14px;font-family:"SF Mono",Menlo,monospace;font-size:22px;font-weight:700;color:#FFB347;z-index:10;text-align:right}
   #speed small{display:block;font-size:9px;color:#bbb;letter-spacing:0.1em;margin-top:1px;font-weight:400}
 
-  #toast{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,0.8);backdrop-filter:blur(12px);border:1px solid #FFB347;border-radius:10px;padding:14px 22px;font-weight:700;color:#FFB347;letter-spacing:0.08em;text-transform:uppercase;font-size:14px;z-index:20;opacity:0;pointer-events:none;transition:opacity .3s;text-align:center}
-  #toast.on{opacity:1}
+  /* off-screen edge arrow */
+  #edge-arrow{position:fixed;width:60px;height:60px;pointer-events:none;z-index:9;display:none;transform:translate(-50%,-50%)}
+  #edge-arrow svg{width:100%;height:100%;filter:drop-shadow(0 0 12px rgba(255,210,74,0.8))}
 
-  #crosshair{position:fixed;width:22px;height:22px;border:2px solid #E94B5C;border-radius:50%;pointer-events:none;transform:translate(-50%,-50%);z-index:9;mix-blend-mode:multiply;box-shadow:0 0 8px rgba(233,75,92,0.5)}
-  #crosshair::before,#crosshair::after{content:"";position:absolute;background:#E94B5C}
-  #crosshair::before{left:50%;top:-6px;width:2px;height:6px;transform:translateX(-50%)}
-  #crosshair::after{top:50%;left:-6px;height:2px;width:6px;transform:translateY(-50%)}
+  #toast{position:fixed;top:30%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,0.85);backdrop-filter:blur(12px);border:2px solid #9EF67C;border-radius:14px;padding:18px 32px;font-weight:700;color:#9EF67C;letter-spacing:0.08em;text-transform:uppercase;font-size:18px;z-index:20;opacity:0;pointer-events:none;transition:opacity .25s;text-align:center}
+  #toast.on{opacity:1}
 </style>
 </head>
 <body>
 <div id="app"></div>
-<div id="crosshair"></div>
 
 <div id="hud-help">
   <div class="title">GTAzinho · alpha</div>
   <kbd>W</kbd>/<kbd>S</kbd> dirige · <kbd>A</kbd>/<kbd>D</kbd> vira<br>
-  <kbd>Mouse</kbd> mira · <kbd>Click</kbd> atira<br>
   <kbd>Space</kbd> freio
 </div>
 
 <div id="hud-stats">
   <div class="row"><span class="label">cash</span><span class="v-cash" id="cash">$0</span></div>
-  <div class="row"><span class="label">score</span><span class="v-score" id="score">0</span></div>
-  <div><div class="label">hp</div><div id="hp-bar"><div id="hp-fill" style="width:100%"></div></div></div>
-  <div style="margin-top:6px"><div class="label">wanted</div><div id="wanted">
-    <div class="star">★</div><div class="star">★</div><div class="star">★</div><div class="star">★</div><div class="star">★</div>
-  </div></div>
+  <div class="row"><span class="label">jobs</span><span class="v-jobs" id="jobs">0</span></div>
 </div>
 
 <div id="mission">
   <div class="label">missão</div>
   <div class="text" id="mission-text">…</div>
-  <div class="reward" id="mission-reward"></div>
+  <div class="meta">
+    <span class="dist" id="mission-dist"></span>
+    <span class="reward" id="mission-reward"></span>
+  </div>
 </div>
 
 <div id="speed">0<small>KM/H</small></div>
+
+<div id="edge-arrow">
+  <svg viewBox="0 0 60 60">
+    <polygon points="30,5 50,40 30,32 10,40" fill="#FFD24A" stroke="#000" stroke-width="2"/>
+  </svg>
+</div>
+
 <div id="toast"></div>
 
 <script type="importmap">
@@ -82,7 +83,7 @@ import * as THREE from 'three';
 // ============= scene =============
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x9CD8FF);
-scene.fog = new THREE.Fog(0xCFE9FF, 80, 220);
+scene.fog = new THREE.Fog(0xCFE9FF, 90, 240);
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -92,9 +93,8 @@ renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 document.getElementById('app').appendChild(renderer.domElement);
 
 const camera = new THREE.PerspectiveCamera(50, window.innerWidth/window.innerHeight, 0.5, 500);
-camera.up.set(0, 0, -1); // -Z = "up on screen" so W goes up
+camera.up.set(0, 0, -1);
 
-// daylight
 scene.add(new THREE.HemisphereLight(0xCFE9FF, 0x506050, 0.7));
 const sun = new THREE.DirectionalLight(0xFFF4D6, 1.0);
 sun.position.set(40, 80, 30);
@@ -107,8 +107,6 @@ scene.add(sun);
 
 // ============= ground & city =============
 const WORLD = 220;
-
-// grassy ground
 const ground = new THREE.Mesh(
   new THREE.PlaneGeometry(WORLD*1.5, WORLD*1.5),
   new THREE.MeshStandardMaterial({ color: 0x88B070, roughness: 1 })
@@ -117,22 +115,18 @@ ground.rotation.x = -Math.PI/2;
 ground.receiveShadow = true;
 scene.add(ground);
 
-// road grid: 5 horizontal + 5 vertical roads, asphalt
 const roadMat = new THREE.MeshStandardMaterial({ color: 0x4a4a52, roughness: 1 });
 const laneMat = new THREE.MeshBasicMaterial({ color: 0xFFFFFF });
 const ROAD_W = 10;
 const ROAD_SPACING = 40;
 const roadLines = [-2,-1,0,1,2].map(i => i*ROAD_SPACING);
-
-const buildingObstacles = []; // {pos:Vec2, halfX, halfZ}
+const buildingObstacles = [];
 
 for (const z of roadLines) {
   const r = new THREE.Mesh(new THREE.PlaneGeometry(WORLD, ROAD_W), roadMat);
   r.rotation.x = -Math.PI/2; r.position.set(0, 0.01, z); r.receiveShadow = true;
   scene.add(r);
-  // dashed center line
   for (let x = -WORLD/2 + 4; x < WORLD/2; x += 8) {
-    if (Math.abs(x) < 6 && roadLines.some(zl => Math.abs(zl - z) < 0.1)) {} // skip intersections handled below
     const s = new THREE.Mesh(new THREE.PlaneGeometry(3, 0.4), laneMat);
     s.rotation.x = -Math.PI/2; s.position.set(x, 0.02, z);
     scene.add(s);
@@ -149,65 +143,40 @@ for (const x of roadLines) {
   }
 }
 
-// buildings: simple boxes in each block, off the road
 const bldgPalette = [0xE8C547, 0xF18F01, 0xC73E1D, 0x4F86C6, 0xA78BFA, 0xE4B7E5, 0x9EC5AB];
-function placeBuildings() {
-  // for each block (between road lines), place 1-2 buildings off-road
-  for (let i = 0; i < roadLines.length - 1; i++) {
-    for (let j = 0; j < roadLines.length - 1; j++) {
-      const cx = (roadLines[i] + roadLines[i+1]) / 2;
-      const cz = (roadLines[j] + roadLines[j+1]) / 2;
-      const blockW = roadLines[i+1] - roadLines[i] - ROAD_W;
-      const blockD = roadLines[j+1] - roadLines[j] - ROAD_W;
-      const count = 1 + Math.floor(Math.random()*2);
-      for (let k = 0; k < count; k++) {
-        const w = 8 + Math.random()*8;
-        const d = 8 + Math.random()*8;
-        const h = 6 + Math.random()*22;
-        const ox = (Math.random()-0.5) * (blockW - w - 2);
-        const oz = (Math.random()-0.5) * (blockD - d - 2);
-        const x = cx + ox, z = cz + oz;
-        const color = bldgPalette[Math.floor(Math.random()*bldgPalette.length)];
-        const b = new THREE.Mesh(
-          new THREE.BoxGeometry(w, h, d),
-          new THREE.MeshStandardMaterial({ color, roughness: 0.85 })
-        );
-        b.position.set(x, h/2, z);
-        b.castShadow = true; b.receiveShadow = true;
-        scene.add(b);
-        // simple roof
-        const roof = new THREE.Mesh(
-          new THREE.BoxGeometry(w*0.95, 0.6, d*0.95),
-          new THREE.MeshStandardMaterial({ color: 0x222 })
-        );
-        roof.position.set(x, h + 0.3, z);
-        scene.add(roof);
-        buildingObstacles.push({ pos: new THREE.Vector2(x,z), halfX: w/2, halfZ: d/2 });
-      }
+for (let i = 0; i < roadLines.length - 1; i++) {
+  for (let j = 0; j < roadLines.length - 1; j++) {
+    const cx = (roadLines[i] + roadLines[i+1]) / 2;
+    const cz = (roadLines[j] + roadLines[j+1]) / 2;
+    const blockW = roadLines[i+1] - roadLines[i] - ROAD_W;
+    const blockD = roadLines[j+1] - roadLines[j] - ROAD_W;
+    const count = 1 + Math.floor(Math.random()*2);
+    for (let k = 0; k < count; k++) {
+      const w = 8 + Math.random()*8;
+      const d = 8 + Math.random()*8;
+      const h = 6 + Math.random()*22;
+      const ox = (Math.random()-0.5) * (blockW - w - 2);
+      const oz = (Math.random()-0.5) * (blockD - d - 2);
+      const x = cx + ox, z = cz + oz;
+      const color = bldgPalette[Math.floor(Math.random()*bldgPalette.length)];
+      const b = new THREE.Mesh(
+        new THREE.BoxGeometry(w, h, d),
+        new THREE.MeshStandardMaterial({ color, roughness: 0.85 })
+      );
+      b.position.set(x, h/2, z);
+      b.castShadow = true; b.receiveShadow = true;
+      scene.add(b);
+      const roof = new THREE.Mesh(
+        new THREE.BoxGeometry(w*0.95, 0.6, d*0.95),
+        new THREE.MeshStandardMaterial({ color: 0x222 })
+      );
+      roof.position.set(x, h + 0.3, z); scene.add(roof);
+      buildingObstacles.push({ pos: new THREE.Vector2(x,z), halfX: w/2, halfZ: d/2 });
     }
   }
 }
-placeBuildings();
 
-// trees on road verges (just decoration)
-for (let i = 0; i < 30; i++) {
-  const x = (Math.random()-0.5) * WORLD * 0.9;
-  const z = (Math.random()-0.5) * WORLD * 0.9;
-  // skip if close to road centerlines
-  if (roadLines.some(rl => Math.abs(z - rl) < ROAD_W) || roadLines.some(rl => Math.abs(x - rl) < ROAD_W)) continue;
-  const trunk = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.3,0.3,2,6),
-    new THREE.MeshStandardMaterial({ color: 0x6b3a1a })
-  );
-  trunk.position.set(x, 1, z); scene.add(trunk);
-  const leaves = new THREE.Mesh(
-    new THREE.SphereGeometry(1.5, 6, 5),
-    new THREE.MeshStandardMaterial({ color: 0x4a8045, roughness: 1 })
-  );
-  leaves.position.set(x, 2.8, z); leaves.castShadow = true; scene.add(leaves);
-}
-
-// ============= car factory =============
+// ============= car =============
 function makeCar(bodyColor, roofColor) {
   const g = new THREE.Group();
   const body = new THREE.Mesh(
@@ -222,263 +191,165 @@ function makeCar(bodyColor, roofColor) {
   );
   cabin.position.set(0, 1.05, -0.2); cabin.castShadow = true;
   g.add(cabin);
-  // headlights so we can see the front
   for (const sx of [-0.55, 0.55]) {
-    const h = new THREE.Mesh(
-      new THREE.BoxGeometry(0.3, 0.2, 0.1),
-      new THREE.MeshBasicMaterial({ color: 0xFFEFB0 })
-    );
+    const h = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.2, 0.1), new THREE.MeshBasicMaterial({ color: 0xFFEFB0 }));
     h.position.set(sx, 0.6, 1.7); g.add(h);
   }
-  // tail lights (red) at back
   for (const sx of [-0.55, 0.55]) {
-    const t = new THREE.Mesh(
-      new THREE.BoxGeometry(0.3, 0.15, 0.1),
-      new THREE.MeshBasicMaterial({ color: 0xCC2222 })
-    );
+    const t = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.15, 0.1), new THREE.MeshBasicMaterial({ color: 0xCC2222 }));
     t.position.set(sx, 0.6, -1.7); g.add(t);
   }
   return g;
 }
 
-// ============= state =============
 const player = makeCar(0xFF6B35, 0x222);
 scene.add(player);
 const playerState = {
-  pos: new THREE.Vector3(20, 0, 0),
+  pos: new THREE.Vector3(0, 0, 0),
   vel: 0, heading: 0,
-  hp: 100, cash: 0, score: 0,
-  wanted: 0, wantedDecay: 0,
-  fireCd: 0, radius: 1.6,
+  cash: 0, jobs: 0,
+  radius: 1.6,
 };
 
-// gun mounted on the car, sticks out the right
-const gun = (() => {
+// ============= big arrow above player =============
+const arrow = (() => {
   const g = new THREE.Group();
-  const grip = new THREE.Mesh(new THREE.BoxGeometry(0.18,0.4,0.25), new THREE.MeshStandardMaterial({color:0x222}));
-  grip.position.y = -0.1; g.add(grip);
-  const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.08,0.08,1.0,8), new THREE.MeshStandardMaterial({color:0x444,metalness:0.7,roughness:0.3}));
-  barrel.rotation.x = Math.PI/2; barrel.position.z = 0.5; g.add(barrel);
-  const flash = new THREE.Mesh(
-    new THREE.SphereGeometry(0.4, 8, 8),
-    new THREE.MeshBasicMaterial({ color: 0xFFD24A, transparent:true, opacity:0 })
+  const shaft = new THREE.Mesh(
+    new THREE.BoxGeometry(0.4, 0.4, 2),
+    new THREE.MeshStandardMaterial({ color: 0xFFD24A, emissive: 0xFFD24A, emissiveIntensity: 0.6 })
   );
-  flash.position.z = 1.05; g.add(flash);
-  g.userData.flash = flash;
-  g.position.set(0.95, 1.0, 0.2);
-  player.add(g);
+  shaft.position.z = 1; g.add(shaft);
+  const head = new THREE.Mesh(
+    new THREE.ConeGeometry(0.9, 1.4, 4),
+    new THREE.MeshStandardMaterial({ color: 0xFFD24A, emissive: 0xFFD24A, emissiveIntensity: 0.6 })
+  );
+  head.rotation.x = Math.PI/2;
+  head.rotation.y = Math.PI/4; // square base aligned
+  head.position.z = 2.7; g.add(head);
+  g.position.y = 5;
+  scene.add(g);
   return g;
 })();
 
-const enemies = [];
-const bullets = [];
-const debris = [];
-const pickups = []; // mission markers
-
-// ============= mission system =============
+// ============= mission =============
 const missionState = {
-  phase: 'pickup', // 'pickup' | 'dropoff' | 'idle'
+  phase: 'pickup', // pickup | dropoff
   pickupPos: null, dropoffPos: null,
-  reward: 0, marker: null,
+  reward: 0, marker: null, markerColor: 0xFFD24A,
 };
 
 const missionTextEl = document.getElementById('mission-text');
 const missionRewardEl = document.getElementById('mission-reward');
+const missionDistEl = document.getElementById('mission-dist');
 
 function clearMarker() {
   if (missionState.marker) { scene.remove(missionState.marker); missionState.marker = null; }
 }
 function spawnMarker(pos, color) {
   const g = new THREE.Group();
+  // ground glow disc
+  const disc = new THREE.Mesh(
+    new THREE.CircleGeometry(4, 32),
+    new THREE.MeshBasicMaterial({ color, transparent:true, opacity:0.45 })
+  );
+  disc.rotation.x = -Math.PI/2; disc.position.y = 0.05;
+  g.add(disc);
+  // big hollow ring
   const ring = new THREE.Mesh(
-    new THREE.CylinderGeometry(2.2, 2.2, 0.2, 24, 1, true),
-    new THREE.MeshBasicMaterial({ color, side: THREE.DoubleSide })
+    new THREE.TorusGeometry(3, 0.4, 8, 24),
+    new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.8 })
   );
-  ring.position.y = 1.5;
+  ring.rotation.x = Math.PI/2; ring.position.y = 1.5;
   g.add(ring);
+  // tall pillar of light
   const beam = new THREE.Mesh(
-    new THREE.CylinderGeometry(2, 0.1, 14, 16, 1, true),
-    new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.35, side: THREE.DoubleSide })
+    new THREE.CylinderGeometry(2.5, 2.5, 30, 24, 1, true),
+    new THREE.MeshBasicMaterial({ color, transparent:true, opacity:0.18, side: THREE.DoubleSide })
   );
-  beam.position.y = 7;
-  g.add(beam);
+  beam.position.y = 15; g.add(beam);
+  // smaller inner beam, more solid
+  const innerBeam = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.6, 0.6, 30, 12, 1, true),
+    new THREE.MeshBasicMaterial({ color, transparent:true, opacity:0.5, side: THREE.DoubleSide })
+  );
+  innerBeam.position.y = 15; g.add(innerBeam);
   g.position.copy(pos);
   scene.add(g);
   return g;
 }
 function pickRoadPos() {
-  // pick a random spot near a road intersection
-  const x = roadLines[Math.floor(Math.random()*roadLines.length)] + (Math.random()-0.5) * 6;
-  const z = roadLines[Math.floor(Math.random()*roadLines.length)] + (Math.random()-0.5) * 6;
+  const x = roadLines[Math.floor(Math.random()*roadLines.length)] + (Math.random()-0.5) * 4;
+  const z = roadLines[Math.floor(Math.random()*roadLines.length)] + (Math.random()-0.5) * 4;
   return new THREE.Vector3(x, 0, z);
 }
 function newMission() {
-  missionState.phase = 'pickup';
   let p, d;
-  do { p = pickRoadPos(); } while (p.distanceTo(playerState.pos) < 15);
+  do { p = pickRoadPos(); } while (p.distanceTo(playerState.pos) < 18);
   do { d = pickRoadPos(); } while (d.distanceTo(p) < 30);
+  missionState.phase = 'pickup';
   missionState.pickupPos = p;
   missionState.dropoffPos = d;
   missionState.reward = 200 + Math.floor(Math.random()*300);
+  missionState.markerColor = 0xFFD24A;
   clearMarker();
   missionState.marker = spawnMarker(p, 0xFFD24A);
-  missionTextEl.textContent = 'Pega o pacote no marcador amarelo';
-  missionRewardEl.textContent = `Recompensa: $${missionState.reward}`;
+  missionTextEl.textContent = '🟡 Pega o pacote';
+  missionRewardEl.textContent = `$${missionState.reward}`;
 }
 function onPickup() {
   missionState.phase = 'dropoff';
+  missionState.markerColor = 0x9EF67C;
   clearMarker();
   missionState.marker = spawnMarker(missionState.dropoffPos, 0x9EF67C);
-  missionTextEl.textContent = 'Entrega no marcador verde';
-  missionRewardEl.textContent = `Recompensa: $${missionState.reward}`;
+  missionTextEl.textContent = '🟢 Entrega o pacote';
   toast('PEGOU O PACOTE');
-  // 30% chance heat starts going up
-  if (Math.random() < 0.35) {
-    playerState.wanted = Math.max(playerState.wanted, 1);
-    playerState.wantedDecay = 14;
-    setTimeout(() => toast('!! ALGUÉM CHAMOU A POLÍCIA'), 600);
-  }
 }
 function onDelivery() {
   playerState.cash += missionState.reward;
-  playerState.score += missionState.reward;
-  toast(`+$${missionState.reward}  ENTREGUE`);
+  playerState.jobs += 1;
+  toast(`+$${missionState.reward}`);
   clearMarker();
-  setTimeout(newMission, 1500);
+  setTimeout(newMission, 1100);
   missionState.phase = 'idle';
   missionTextEl.textContent = 'Procurando próxima missão…';
   missionRewardEl.textContent = '';
-}
-
-// ============= bullets =============
-const bulletGeo = new THREE.SphereGeometry(0.18, 6, 6);
-const bulletMatPlayer = new THREE.MeshBasicMaterial({ color: 0xFFD24A });
-const bulletMatEnemy  = new THREE.MeshBasicMaterial({ color: 0xE94B5C });
-function spawnBullet(origin, dir, source) {
-  const mesh = new THREE.Mesh(bulletGeo, source==='player'?bulletMatPlayer:bulletMatEnemy);
-  mesh.position.copy(origin);
-  scene.add(mesh);
-  bullets.push({
-    mesh, pos: origin.clone(), dir: dir.clone().normalize(),
-    life: 1.4, source, dmg: source==='player'? 34 : 12
-  });
-}
-
-// ============= debris =============
-function spawnExplosion(pos) {
-  for (let i = 0; i < 14; i++) {
-    const m = new THREE.Mesh(
-      new THREE.BoxGeometry(0.3,0.3,0.3),
-      new THREE.MeshBasicMaterial({ color: i%2 ? 0xFF6B35 : 0xFFD24A })
-    );
-    m.position.copy(pos); m.position.y = 0.6;
-    scene.add(m);
-    debris.push({
-      mesh: m, life: 1.2,
-      vel: new THREE.Vector3((Math.random()-0.5)*8, 4+Math.random()*4, (Math.random()-0.5)*8),
-      spin: new THREE.Vector3(Math.random()*8, Math.random()*8, Math.random()*8)
-    });
-  }
+  missionDistEl.textContent = '';
 }
 
 // ============= toast =============
 const toastEl = document.getElementById('toast');
 let toastT = 0;
-function toast(msg) { toastEl.textContent = msg; toastEl.classList.add('on'); toastT = 1.6; }
-
-// ============= enemies =============
-function spawnEnemy(type, x, z) {
-  const car = type === 'police'
-    ? makeCar(0x1f4ec9, 0xffffff)
-    : makeCar(0x6b3a1a, 0x111);
-  if (type === 'police') {
-    const bar = new THREE.Mesh(new THREE.BoxGeometry(0.7,0.2,1.3), new THREE.MeshBasicMaterial({color:0xFFD24A}));
-    bar.position.set(0, 1.45, -0.2);
-    car.add(bar);
-  }
-  car.position.set(x, 0, z);
-  scene.add(car);
-  enemies.push({
-    type, mesh: car,
-    pos: new THREE.Vector3(x, 0, z),
-    vel: 0,
-    heading: Math.atan2(playerState.pos.x - x, -(playerState.pos.z - z)),
-    hp: type==='police'? 80 : 60,
-    fireCd: 1 + Math.random(), dead: false, radius: 1.7
-  });
-}
-let spawnT = 4;
-function maybeSpawn(dt) {
-  spawnT -= dt;
-  if (spawnT > 0) return;
-  spawnT = 4 + Math.random()*4;
-  const angle = Math.random() * Math.PI * 2;
-  const dist = 40 + Math.random()*15;
-  const x = playerState.pos.x + Math.cos(angle)*dist;
-  const z = playerState.pos.z + Math.sin(angle)*dist;
-  if (playerState.wanted >= 1 && enemies.filter(e=>e.type==='police' && !e.dead).length < playerState.wanted + 1) {
-    spawnEnemy('police', x, z);
-  }
-  if (Math.random() < 0.25 && enemies.filter(e=>e.type==='bandit' && !e.dead).length < 2) {
-    spawnEnemy('bandit', x+4, z+4);
-  }
-}
+function toast(msg) { toastEl.textContent = msg; toastEl.classList.add('on'); toastT = 1.4; }
 
 // ============= input =============
 const keys = {};
-const mouse = { x: window.innerWidth/2, y: window.innerHeight/2, down: false, world: new THREE.Vector3() };
-const crosshairEl = document.getElementById('crosshair');
-crosshairEl.style.left = mouse.x+'px'; crosshairEl.style.top = mouse.y+'px';
-
 window.addEventListener('keydown', e => { keys[e.code] = true; });
 window.addEventListener('keyup', e => { keys[e.code] = false; });
-window.addEventListener('mousemove', e => {
-  mouse.x = e.clientX; mouse.y = e.clientY;
-  crosshairEl.style.left = e.clientX+'px'; crosshairEl.style.top = e.clientY+'px';
-});
-window.addEventListener('mousedown', () => { mouse.down = true; });
-window.addEventListener('mouseup',   () => { mouse.down = false; });
-window.addEventListener('contextmenu', e => e.preventDefault());
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth/window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-const rc = new THREE.Raycaster();
-const groundPlane = new THREE.Plane(new THREE.Vector3(0,1,0), 0);
-function updateMouseWorld() {
-  const ndc = new THREE.Vector2(
-    (mouse.x/window.innerWidth)*2 - 1,
-    -(mouse.y/window.innerHeight)*2 + 1
-  );
-  rc.setFromCamera(ndc, camera);
-  rc.ray.intersectPlane(groundPlane, mouse.world);
-}
-
-// ============= HUD =============
-const cashEl = document.getElementById('cash');
-const scoreEl = document.getElementById('score');
-const hpEl = document.getElementById('hp-fill');
-const wantedStars = [...document.querySelectorAll('#wanted .star')];
-const speedEl = document.getElementById('speed');
-function syncHUD() {
-  cashEl.textContent = '$' + playerState.cash;
-  scoreEl.textContent = playerState.score;
-  hpEl.style.width = Math.max(0, playerState.hp) + '%';
-  wantedStars.forEach((s,i)=>s.classList.toggle('on', i < playerState.wanted));
-}
-
 // ============= helpers =============
-// car forward direction in world (because heading=0 means facing -Z)
 function fwdVec(h) { return new THREE.Vector3(Math.sin(h), 0, -Math.cos(h)); }
-// applies rectangular collision check vs all buildings
 function blockedAt(x, z, radius) {
   for (const b of buildingObstacles) {
     const dx = Math.abs(x - b.pos.x), dz = Math.abs(z - b.pos.y);
     if (dx < b.halfX + radius && dz < b.halfZ + radius) return true;
   }
   return false;
+}
+
+// ============= HUD sync =============
+const cashEl = document.getElementById('cash');
+const jobsEl = document.getElementById('jobs');
+const speedEl = document.getElementById('speed');
+const edgeArrowEl = document.getElementById('edge-arrow');
+
+function syncHUD() {
+  cashEl.textContent = '$' + playerState.cash;
+  jobsEl.textContent = playerState.jobs;
 }
 
 // ============= main loop =============
@@ -488,7 +359,6 @@ newMission();
 
 function update(dt) {
   elapsed += dt;
-  updateMouseWorld();
 
   // ---- driving ----
   const accel = (keys['KeyW']||keys['ArrowUp']) ? 22 : 0;
@@ -501,186 +371,99 @@ function update(dt) {
   playerState.vel *= (1 - dt * (handBrake ? 4 : 0.7));
   playerState.vel = Math.max(-12, Math.min(32, playerState.vel));
 
-  // steering: D = right (+heading), A = left (-heading); reverses when going backward
   const steer = (steerR - steerL) * Math.min(Math.abs(playerState.vel)/6, 1.0);
   playerState.heading += steer * dt * 2.4 * Math.sign(playerState.vel || 1);
 
-  // movement: forward = (sin h, 0, -cos h)
   const fwd = fwdVec(playerState.heading);
   const nx = playerState.pos.x + fwd.x * playerState.vel * dt;
   const nz = playerState.pos.z + fwd.z * playerState.vel * dt;
-
-  // separate-axis collision with buildings (sliding)
   let cx = playerState.pos.x, cz = playerState.pos.z;
   if (!blockedAt(nx, cz, playerState.radius)) cx = nx; else playerState.vel *= 0.6;
   if (!blockedAt(cx, nz, playerState.radius)) cz = nz; else playerState.vel *= 0.6;
-  playerState.pos.x = Math.max(-WORLD/2 + 5, Math.min(WORLD/2 - 5, cx));
-  playerState.pos.z = Math.max(-WORLD/2 + 5, Math.min(WORLD/2 - 5, cz));
+  playerState.pos.x = Math.max(-WORLD/2+5, Math.min(WORLD/2-5, cx));
+  playerState.pos.z = Math.max(-WORLD/2+5, Math.min(WORLD/2-5, cz));
 
   player.position.copy(playerState.pos);
-  player.rotation.y = Math.PI - playerState.heading; // mesh front (+Z) → world (sin h, 0, -cos h)
+  player.rotation.y = Math.PI - playerState.heading;
 
-  // ---- mission triggers ----
-  if (missionState.marker) {
-    const target = missionState.phase === 'pickup' ? missionState.pickupPos : missionState.dropoffPos;
-    if (target && playerState.pos.distanceTo(target) < 3) {
+  // ---- mission marker check ----
+  let target = null;
+  if (missionState.phase === 'pickup') target = missionState.pickupPos;
+  else if (missionState.phase === 'dropoff') target = missionState.dropoffPos;
+
+  if (target) {
+    const dist = playerState.pos.distanceTo(target);
+    missionDistEl.textContent = `${Math.round(dist)}m`;
+    if (dist < 4) {
       if (missionState.phase === 'pickup') onPickup();
       else if (missionState.phase === 'dropoff') onDelivery();
     }
-    // spin marker
-    missionState.marker.rotation.y += dt * 1.6;
+  } else {
+    missionDistEl.textContent = '';
+  }
+  if (missionState.marker) {
+    missionState.marker.rotation.y += dt * 1.2;
+    // pulse the ring
+    const s = 1 + Math.sin(elapsed * 4) * 0.08;
+    missionState.marker.children[1].scale.set(s, s, s);
   }
 
-  // ---- aim & fire ----
-  // gun rotates locally to face mouse world target
-  const aimWorld = new THREE.Vector3(mouse.world.x - playerState.pos.x, 0, mouse.world.z - playerState.pos.z);
-  if (aimWorld.lengthSq() > 0.1) {
-    // player.rotation.y = π - heading, so gun world angle = (π - heading) + gun.rotation.y
-    // we want gun to point at aim → gun world angle = atan2(ax, az)
-    gun.rotation.y = Math.atan2(aimWorld.x, aimWorld.z) - Math.PI + playerState.heading;
-  }
-  if (gun.userData.flash.material.opacity > 0) {
-    gun.userData.flash.material.opacity = Math.max(0, gun.userData.flash.material.opacity - dt*8);
-  }
-
-  playerState.fireCd -= dt;
-  if (mouse.down && playerState.fireCd <= 0) {
-    playerState.fireCd = 0.13;
-    const dir = new THREE.Vector3(mouse.world.x - playerState.pos.x, 0, mouse.world.z - playerState.pos.z);
-    if (dir.lengthSq() > 0.1) {
-      dir.normalize();
-      const origin = playerState.pos.clone().add(new THREE.Vector3(dir.x*1.5, 1.0, dir.z*1.5));
-      spawnBullet(origin, dir, 'player');
-      gun.userData.flash.material.opacity = 1;
-    }
+  // ---- big floating arrow above player toward target ----
+  arrow.position.set(playerState.pos.x, 5 + Math.sin(elapsed*3)*0.3, playerState.pos.z);
+  if (target) {
+    const dx = target.x - playerState.pos.x;
+    const dz = target.z - playerState.pos.z;
+    const angle = Math.atan2(dx, dz); // 0 = +Z, π/2 = +X
+    arrow.rotation.y = Math.PI - angle; // mesh forward (+Z) → world (sin a, 0, -cos a)... we want world (dx,dz) normalized
+    // Wait: arrow's local +Z maps to world (sin(rotation.y), 0, cos(rotation.y))
+    // we want this to equal (dx, 0, dz) normalized: sin r = dx/L, cos r = dz/L → r = atan2(dx, dz)
+    arrow.rotation.y = Math.atan2(dx, dz);
+    arrow.visible = true;
+  } else {
+    arrow.visible = false;
   }
 
-  // ---- enemies ----
-  for (const e of enemies) {
-    if (e.dead) continue;
-    const toP = new THREE.Vector3(playerState.pos.x - e.pos.x, 0, playerState.pos.z - e.pos.z);
-    const dist = toP.length();
-    const desired = Math.atan2(toP.x, -toP.z);
-    let dh = desired - e.heading;
-    while (dh > Math.PI) dh -= Math.PI*2;
-    while (dh < -Math.PI) dh += Math.PI*2;
-    e.heading += Math.sign(dh) * Math.min(Math.abs(dh), dt * 1.8);
-
-    const targetSpeed = dist > 9 ? (e.type==='police'? 18 : 14) : 4;
-    e.vel += (targetSpeed - e.vel) * dt * 1.2;
-
-    const ef = fwdVec(e.heading);
-    const enx = e.pos.x + ef.x * e.vel * dt;
-    const enz = e.pos.z + ef.z * e.vel * dt;
-    let ecx = e.pos.x, ecz = e.pos.z;
-    if (!blockedAt(enx, ecz, e.radius)) ecx = enx; else e.heading += 0.5;
-    if (!blockedAt(ecx, enz, e.radius)) ecz = enz; else e.heading += 0.5;
-    e.pos.x = ecx; e.pos.z = ecz;
-
-    e.mesh.position.copy(e.pos);
-    e.mesh.rotation.y = Math.PI - e.heading;
-
-    e.fireCd -= dt;
-    if (dist < 24 && e.fireCd <= 0) {
-      e.fireCd = e.type==='police'? 0.7 : 0.95;
-      const dir = toP.clone().normalize();
-      const origin = e.pos.clone().add(new THREE.Vector3(dir.x*1.5, 1.0, dir.z*1.5));
-      spawnBullet(origin, dir, 'enemy');
-    }
-  }
-
-  // ---- bullets ----
-  for (let i = bullets.length-1; i >= 0; i--) {
-    const b = bullets[i];
-    b.life -= dt;
-    b.pos.x += b.dir.x * 55 * dt;
-    b.pos.z += b.dir.z * 55 * dt;
-    b.mesh.position.copy(b.pos);
-
-    let hit = false;
-    if (b.source === 'player') {
-      for (const e of enemies) {
-        if (e.dead) continue;
-        const dx = b.pos.x - e.pos.x, dz = b.pos.z - e.pos.z;
-        if (dx*dx + dz*dz < (e.radius+0.4)**2) {
-          e.hp -= b.dmg; hit = true;
-          if (e.hp <= 0) {
-            e.dead = true;
-            spawnExplosion(e.pos);
-            scene.remove(e.mesh);
-            const cop = e.type === 'police';
-            playerState.score += cop ? 1000 : 500;
-            playerState.cash  += cop ? 250 : 120;
-            playerState.wanted = Math.min(5, playerState.wanted + 1);
-            playerState.wantedDecay = 14;
-            toast(cop ? '+1000  COP DOWN' : '+500  BANDIT DOWN');
-          } else {
-            playerState.wanted = Math.max(playerState.wanted, 1);
-            playerState.wantedDecay = 14;
-          }
-          break;
-        }
+  // ---- off-screen edge arrow ----
+  if (target) {
+    const v = target.clone().project(camera);
+    if (v.x < -1 || v.x > 1 || v.y < -1 || v.y > 1 || v.z > 1) {
+      // off-screen: clamp to edge
+      const cx = (v.x * 0.5 + 0.5) * window.innerWidth;
+      const cy = (-v.y * 0.5 + 0.5) * window.innerHeight;
+      // direction from screen center to target screen pos
+      const sx = window.innerWidth/2, sy = window.innerHeight/2;
+      let dx = cx - sx, dy = cy - sy;
+      // when behind camera (v.z>1), flip
+      if (v.z > 1) { dx = -dx; dy = -dy; }
+      const margin = 60;
+      const aspect = (window.innerWidth/2 - margin) / (window.innerHeight/2 - margin);
+      const ax = Math.abs(dx), ay = Math.abs(dy);
+      let scale;
+      if (ax/ay > aspect) {
+        scale = (window.innerWidth/2 - margin) / ax;
+      } else {
+        scale = (window.innerHeight/2 - margin) / ay;
       }
+      const ex = sx + dx*scale;
+      const ey = sy + dy*scale;
+      edgeArrowEl.style.left = ex + 'px';
+      edgeArrowEl.style.top = ey + 'px';
+      edgeArrowEl.style.transform = `translate(-50%,-50%) rotate(${Math.atan2(dy, dx) - Math.PI/2}rad)`;
+      edgeArrowEl.style.display = 'block';
     } else {
-      const dx = b.pos.x - playerState.pos.x, dz = b.pos.z - playerState.pos.z;
-      if (dx*dx + dz*dz < (playerState.radius+0.4)**2) {
-        playerState.hp -= b.dmg; hit = true;
-      }
+      edgeArrowEl.style.display = 'none';
     }
-    if (hit || b.life <= 0) { scene.remove(b.mesh); bullets.splice(i,1); }
+  } else {
+    edgeArrowEl.style.display = 'none';
   }
-
-  // ---- debris ----
-  for (let i = debris.length-1; i >= 0; i--) {
-    const d = debris[i];
-    d.life -= dt;
-    d.vel.y -= 14 * dt;
-    d.mesh.position.x += d.vel.x * dt;
-    d.mesh.position.y += d.vel.y * dt;
-    d.mesh.position.z += d.vel.z * dt;
-    d.mesh.rotation.x += d.spin.x * dt;
-    d.mesh.rotation.y += d.spin.y * dt;
-    d.mesh.rotation.z += d.spin.z * dt;
-    if (d.life <= 0 || d.mesh.position.y < 0) { scene.remove(d.mesh); debris.splice(i,1); }
-  }
-
-  // ---- wanted decay ----
-  if (playerState.wanted > 0) {
-    playerState.wantedDecay -= dt;
-    if (playerState.wantedDecay <= 0) {
-      playerState.wanted--;
-      playerState.wantedDecay = 14;
-      if (playerState.wanted === 0) toast('HEAT OFF');
-    }
-  }
-  // hp regen out of combat
-  if (playerState.wantedDecay < 8 && playerState.hp < 100) {
-    playerState.hp = Math.min(100, playerState.hp + dt * 5);
-  }
-  // game over
-  if (playerState.hp <= 0) {
-    playerState.hp = 100;
-    playerState.cash = Math.floor(playerState.cash * 0.5);
-    playerState.wanted = 0; playerState.wantedDecay = 0;
-    playerState.pos.set(20, 0, 0); playerState.vel = 0; playerState.heading = 0;
-    for (const e of enemies) if (!e.dead) { scene.remove(e.mesh); e.dead = true; }
-    toast('BUSTED — RESPAWN');
-  }
-
-  maybeSpawn(dt);
 
   // ---- toast fade ----
   if (toastT > 0) { toastT -= dt; if (toastT <= 0) toastEl.classList.remove('on'); }
 
-  // ---- camera follow (top-down, pulled back) ----
-  // looks straight down with slight tilt toward heading direction
-  const camHeight = 60;
-  const tilt = 12; // shift camera back along screen-up so you see ahead
-  // screen-up corresponds to -Z in world (we set camera.up = (0,0,-1))
-  camera.position.set(playerState.pos.x, camHeight, playerState.pos.z + tilt);
+  // ---- camera ----
+  camera.position.set(playerState.pos.x, 60, playerState.pos.z + 12);
   camera.lookAt(playerState.pos.x, 0, playerState.pos.z);
 
-  // ---- HUD ----
   speedEl.firstChild.textContent = Math.round(Math.abs(playerState.vel) * 5);
   syncHUD();
 }
