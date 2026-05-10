@@ -175,9 +175,11 @@ ground.rotation.x = -Math.PI/2;
 ground.receiveShadow = true;
 scene.add(ground);
 
-const roadMat = new THREE.MeshStandardMaterial({ color: 0x4a4a52, roughness: 1 });
-const laneMat = new THREE.MeshBasicMaterial({ color: 0xFFFFFF });
+const roadMat = new THREE.MeshStandardMaterial({ color: 0x3a3a44, roughness: 1 });
+const laneMat = new THREE.MeshBasicMaterial({ color: 0xFFE066 });
+const sidewalkMat = new THREE.MeshStandardMaterial({ color: 0xCFC8B8, roughness: 1 });
 const ROAD_W = 10;
+const SIDEWALK_W = 1.4;
 const ROAD_SPACING = 40;
 const roadLines = [-2,-1,0,1,2].map(i => i*ROAD_SPACING);
 const buildingObstacles = [];
@@ -186,36 +188,76 @@ for (const z of roadLines) {
   const r = new THREE.Mesh(new THREE.PlaneGeometry(WORLD, ROAD_W), roadMat);
   r.rotation.x = -Math.PI/2; r.position.set(0, 0.01, z); r.receiveShadow = true;
   scene.add(r);
-  for (let x = -WORLD/2 + 4; x < WORLD/2; x += 8) {
-    const s = new THREE.Mesh(new THREE.PlaneGeometry(3, 0.4), laneMat);
-    s.rotation.x = -Math.PI/2; s.position.set(x, 0.02, z);
-    scene.add(s);
+  // sidewalks (raised) on each side
+  for (const off of [-ROAD_W/2 - SIDEWALK_W/2, ROAD_W/2 + SIDEWALK_W/2]) {
+    const sw = new THREE.Mesh(new THREE.BoxGeometry(WORLD, 0.25, SIDEWALK_W), sidewalkMat);
+    sw.position.set(0, 0.13, z + off); sw.receiveShadow = true; scene.add(sw);
+  }
+  for (let x = -WORLD/2 + 4; x < WORLD/2; x += 9) {
+    const s = new THREE.Mesh(new THREE.PlaneGeometry(3, 0.5), laneMat);
+    s.rotation.x = -Math.PI/2; s.position.set(x, 0.02, z); scene.add(s);
   }
 }
 for (const x of roadLines) {
   const r = new THREE.Mesh(new THREE.PlaneGeometry(ROAD_W, WORLD), roadMat);
   r.rotation.x = -Math.PI/2; r.position.set(x, 0.011, 0); r.receiveShadow = true;
   scene.add(r);
-  for (let z = -WORLD/2 + 4; z < WORLD/2; z += 8) {
-    const s = new THREE.Mesh(new THREE.PlaneGeometry(0.4, 3), laneMat);
-    s.rotation.x = -Math.PI/2; s.position.set(x, 0.022, z);
-    scene.add(s);
+  for (const off of [-ROAD_W/2 - SIDEWALK_W/2, ROAD_W/2 + SIDEWALK_W/2]) {
+    const sw = new THREE.Mesh(new THREE.BoxGeometry(SIDEWALK_W, 0.25, WORLD), sidewalkMat);
+    sw.position.set(x + off, 0.13, 0); sw.receiveShadow = true; scene.add(sw);
+  }
+  for (let z = -WORLD/2 + 4; z < WORLD/2; z += 9) {
+    const s = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 3), laneMat);
+    s.rotation.x = -Math.PI/2; s.position.set(x, 0.022, z); scene.add(s);
   }
 }
 
-const bldgPalette = [0xE8C547, 0xF18F01, 0xC73E1D, 0x4F86C6, 0xE4B7E5, 0x9EC5AB];
+const bldgPalette = [0xE8C547, 0xF18F01, 0xC73E1D, 0x4F86C6, 0xE4B7E5, 0x9EC5AB, 0xF4A261, 0x80B7D4];
+const windowMat = new THREE.MeshStandardMaterial({ color: 0x4FC3F7, emissive: 0x4FC3F7, emissiveIntensity: 0.25, roughness: 0.3 });
+const doorMat = new THREE.MeshStandardMaterial({ color: 0x4a2c0f, roughness: 0.8 });
+const trunkMat = new THREE.MeshStandardMaterial({ color: 0x6b3a1a, roughness: 1 });
+const leafMat = new THREE.MeshStandardMaterial({ color: 0x4a8045, roughness: 1 });
+
+function addWindowsAndDoor(x, z, w, h, d) {
+  // ROWS of windows on each face
+  const rows = Math.max(1, Math.floor(h / 4));
+  const colsX = Math.max(2, Math.floor(w / 3));
+  const colsZ = Math.max(2, Math.floor(d / 3));
+  // front (positive Z) and back (negative Z) faces
+  for (let row = 0; row < rows; row++) {
+    const wy = 1.8 + row * 3.2;
+    if (wy > h - 0.8) continue;
+    for (let col = 0; col < colsX; col++) {
+      const wx = -w/2 + (col + 1) * (w / (colsX + 1));
+      const wF = new THREE.Mesh(new THREE.BoxGeometry(0.9, 1.0, 0.06), windowMat);
+      wF.position.set(x + wx, wy, z + d/2 + 0.04); scene.add(wF);
+      const wB = new THREE.Mesh(new THREE.BoxGeometry(0.9, 1.0, 0.06), windowMat);
+      wB.position.set(x + wx, wy, z - d/2 - 0.04); scene.add(wB);
+    }
+    for (let col = 0; col < colsZ; col++) {
+      const wz = -d/2 + (col + 1) * (d / (colsZ + 1));
+      const wL = new THREE.Mesh(new THREE.BoxGeometry(0.06, 1.0, 0.9), windowMat);
+      wL.position.set(x - w/2 - 0.04, wy, z + wz); scene.add(wL);
+      const wR = new THREE.Mesh(new THREE.BoxGeometry(0.06, 1.0, 0.9), windowMat);
+      wR.position.set(x + w/2 + 0.04, wy, z + wz); scene.add(wR);
+    }
+  }
+  // door (front face, ground level)
+  const door = new THREE.Mesh(new THREE.BoxGeometry(1.1, 1.8, 0.06), doorMat);
+  door.position.set(x, 0.9, z + d/2 + 0.04); scene.add(door);
+}
+
 for (let i = 0; i < roadLines.length - 1; i++) {
   for (let j = 0; j < roadLines.length - 1; j++) {
     const cx = (roadLines[i] + roadLines[i+1]) / 2;
     const cz = (roadLines[j] + roadLines[j+1]) / 2;
-    // skip blocks where HQs will go (corners)
     if ((i===0&&j===0) || (i===roadLines.length-2&&j===roadLines.length-2)) continue;
-    const blockW = roadLines[i+1] - roadLines[i] - ROAD_W;
-    const blockD = roadLines[j+1] - roadLines[j] - ROAD_W;
+    const blockW = roadLines[i+1] - roadLines[i] - ROAD_W - SIDEWALK_W*2;
+    const blockD = roadLines[j+1] - roadLines[j] - ROAD_W - SIDEWALK_W*2;
     const count = 1 + Math.floor(Math.random()*2);
     for (let k = 0; k < count; k++) {
-      const w = 8 + Math.random()*8, d = 8 + Math.random()*8;
-      const h = 6 + Math.random()*22;
+      const w = 8 + Math.random()*7, d = 8 + Math.random()*7;
+      const h = 7 + Math.random()*20;
       const ox = (Math.random()-0.5) * (blockW - w - 2);
       const oz = (Math.random()-0.5) * (blockD - d - 2);
       const x = cx + ox, z = cz + oz;
@@ -227,12 +269,29 @@ for (let i = 0; i < roadLines.length - 1; i++) {
       b.position.set(x, h/2, z);
       b.castShadow = true; b.receiveShadow = true;
       scene.add(b);
-      const roof = new THREE.Mesh(
-        new THREE.BoxGeometry(w*0.95, 0.6, d*0.95),
-        new THREE.MeshStandardMaterial({ color: 0x222 })
+      // trim band near top
+      const trim = new THREE.Mesh(
+        new THREE.BoxGeometry(w*1.04, 0.5, d*1.04),
+        new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.7 })
       );
-      roof.position.set(x, h + 0.3, z); scene.add(roof);
+      trim.position.set(x, h - 0.6, z); scene.add(trim);
+      // dark roof slab
+      const roof = new THREE.Mesh(
+        new THREE.BoxGeometry(w*0.96, 0.5, d*0.96),
+        new THREE.MeshStandardMaterial({ color: 0x2a2a2a })
+      );
+      roof.position.set(x, h + 0.25, z); scene.add(roof);
+      addWindowsAndDoor(x, z, w, h, d);
       buildingObstacles.push({ pos: new THREE.Vector2(x,z), halfX: w/2, halfZ: d/2 });
+    }
+    // a tree on the corner of each block (random)
+    if (Math.random() < 0.7) {
+      const tx = cx + (Math.random()-0.5) * (blockW - 4);
+      const tz = cz + (Math.random()-0.5) * (blockD - 4);
+      const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.4, 1.6, 8), trunkMat);
+      trunk.position.set(tx, 0.8, tz); trunk.castShadow = true; scene.add(trunk);
+      const leaves = new THREE.Mesh(new THREE.SphereGeometry(1.6, 8, 6), leafMat);
+      leaves.position.set(tx, 2.5, tz); leaves.castShadow = true; scene.add(leaves);
     }
   }
 }
@@ -285,32 +344,58 @@ function buildHQ(pos, color, accentColor) {
 buildHQ(PLAYER_HQ, 0xFF6B35, 0xFFD24A);
 buildHQ(RIVAL_HQ, 0x6C2BD9, 0xC084FC);
 
-// ============= car factory =============
+// ============= car factory (low-poly Blacktop style) =============
+const _wheelGeo = new THREE.CylinderGeometry(0.34, 0.34, 0.3, 14);
+const _wheelMat = new THREE.MeshStandardMaterial({ color: 0x141414, roughness: 0.95 });
 function makeCar(bodyColor, roofColor, accent=null) {
   const g = new THREE.Group();
-  const body = new THREE.Mesh(
-    new THREE.BoxGeometry(1.8, 0.7, 3.4),
-    new THREE.MeshStandardMaterial({ color: bodyColor, metalness: 0.4, roughness: 0.5 })
-  );
-  body.position.y = 0.5; body.castShadow = true; body.receiveShadow = true;
-  g.add(body);
-  const cabin = new THREE.Mesh(
-    new THREE.BoxGeometry(1.5, 0.5, 1.6),
-    new THREE.MeshStandardMaterial({ color: roofColor, metalness: 0.2, roughness: 0.4 })
-  );
-  cabin.position.set(0, 1.05, -0.2); cabin.castShadow = true;
-  g.add(cabin);
-  for (const sx of [-0.55, 0.55]) {
-    const h = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.2, 0.1), new THREE.MeshBasicMaterial({ color: 0xFFEFB0 }));
-    h.position.set(sx, 0.6, 1.7); g.add(h);
+  const bodyMat = new THREE.MeshStandardMaterial({ color: bodyColor, metalness: 0.25, roughness: 0.55 });
+  // chassis (lower wider plate)
+  const chassis = new THREE.Mesh(new THREE.BoxGeometry(1.95, 0.4, 3.6), bodyMat);
+  chassis.position.y = 0.45; chassis.castShadow = true; chassis.receiveShadow = true; g.add(chassis);
+  // hood / upper deck (narrower, taller)
+  const upper = new THREE.Mesh(new THREE.BoxGeometry(1.75, 0.45, 3.1), bodyMat);
+  upper.position.y = 0.85; upper.castShadow = true; g.add(upper);
+  // bumpers
+  const bumperMat = new THREE.MeshStandardMaterial({ color: 0x2a2a2a, roughness: 0.6 });
+  const fb = new THREE.Mesh(new THREE.BoxGeometry(1.95, 0.25, 0.18), bumperMat);
+  fb.position.set(0, 0.35, 1.85); g.add(fb);
+  const rb = new THREE.Mesh(new THREE.BoxGeometry(1.95, 0.25, 0.18), bumperMat);
+  rb.position.set(0, 0.35, -1.85); g.add(rb);
+  // cabin
+  const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.55, 0.6, 1.55),
+    new THREE.MeshStandardMaterial({ color: roofColor, metalness: 0.2, roughness: 0.4 }));
+  cabin.position.set(0, 1.4, -0.15); cabin.castShadow = true; g.add(cabin);
+  // windshield (slim glass, slightly emissive)
+  const glassMat = new THREE.MeshStandardMaterial({ color: 0x4FC3F7, metalness: 0.6, roughness: 0.2, emissive:0x4FC3F7, emissiveIntensity:0.05 });
+  const wsF = new THREE.Mesh(new THREE.BoxGeometry(1.45, 0.45, 0.1), glassMat);
+  wsF.position.set(0, 1.32, 0.7); g.add(wsF);
+  const wsR = new THREE.Mesh(new THREE.BoxGeometry(1.45, 0.45, 0.1), glassMat);
+  wsR.position.set(0, 1.32, -1.0); g.add(wsR);
+  // 4 wheels
+  const positions = [[0.95,0.34,1.15],[-0.95,0.34,1.15],[0.95,0.34,-1.15],[-0.95,0.34,-1.15]];
+  for (const [x,y,z] of positions) {
+    const w = new THREE.Mesh(_wheelGeo, _wheelMat);
+    w.rotation.z = Math.PI/2;
+    w.position.set(x, y, z); w.castShadow = true;
+    g.add(w);
   }
-  for (const sx of [-0.55, 0.55]) {
-    const t = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.15, 0.1), new THREE.MeshBasicMaterial({ color: 0xCC2222 }));
-    t.position.set(sx, 0.6, -1.7); g.add(t);
+  // headlights
+  for (const sx of [-0.62, 0.62]) {
+    const h = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.22, 0.12),
+      new THREE.MeshBasicMaterial({ color: 0xFFF6C8 }));
+    h.position.set(sx, 0.7, 1.78); g.add(h);
+  }
+  // tail lights
+  for (const sx of [-0.62, 0.62]) {
+    const t = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.16, 0.1),
+      new THREE.MeshBasicMaterial({ color: 0xE63946 }));
+    t.position.set(sx, 0.7, -1.78); g.add(t);
   }
   if (accent) {
-    const a = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.15, 1.2), new THREE.MeshBasicMaterial({ color: accent }));
-    a.position.set(0, 1.45, -0.2); g.add(a);
+    const a = new THREE.Mesh(new THREE.BoxGeometry(0.75, 0.18, 1.2),
+      new THREE.MeshBasicMaterial({ color: accent }));
+    a.position.set(0, 1.78, -0.15); g.add(a);
   }
   return g;
 }
@@ -922,7 +1007,7 @@ function update(dt) {
 
   if (toastT > 0) { toastT -= dt; if (toastT <= 0) toastEl.classList.remove('on'); }
 
-  camera.position.set(playerState.pos.x, 60, playerState.pos.z + 12);
+  camera.position.set(playerState.pos.x, 42, playerState.pos.z + 26);
   camera.lookAt(playerState.pos.x, 0, playerState.pos.z);
 
   speedEl.firstChild.textContent = Math.round(Math.abs(playerState.vel) * 5);
