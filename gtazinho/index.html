@@ -771,25 +771,35 @@ function update(dt) {
   const playing = missionState.phase === 'infiltrate' || missionState.phase === 'extract';
 
   // ---- driving ----
-  const accel = (keys['KeyW']||keys['ArrowUp']) ? 22 : 0;
-  const brake = (keys['KeyS']||keys['ArrowDown']) ? 18 : 0;
+  const accel = (keys['KeyW']||keys['ArrowUp']) ? 42 : 0;
+  const brake = (keys['KeyS']||keys['ArrowDown']) ? 30 : 0;
   const handBrake = keys['Space'] ? 1 : 0;
   const steerL = (keys['KeyA']||keys['ArrowLeft']) ? 1 : 0;
   const steerR = (keys['KeyD']||keys['ArrowRight']) ? 1 : 0;
 
   playerState.vel += (accel - brake) * dt;
-  playerState.vel *= (1 - dt * (handBrake ? 4 : 0.7));
-  playerState.vel = Math.max(-12, Math.min(32, playerState.vel));
+  playerState.vel *= (1 - dt * (handBrake ? 4 : 0.45));
+  playerState.vel = Math.max(-18, Math.min(60, playerState.vel));
 
-  const steer = (steerR - steerL) * Math.min(Math.abs(playerState.vel)/6, 1.0);
-  playerState.heading += steer * dt * 2.4 * Math.sign(playerState.vel || 1);
+  const steer = (steerR - steerL) * Math.min(Math.abs(playerState.vel)/8, 1.0);
+  playerState.heading += steer * dt * 2.6 * Math.sign(playerState.vel || 1);
 
   const fwd = fwdVec(playerState.heading);
   const nx = playerState.pos.x + fwd.x * playerState.vel * dt;
   const nz = playerState.pos.z + fwd.z * playerState.vel * dt;
-  let cx = playerState.pos.x, cz = playerState.pos.z;
-  if (!blockedAt(nx, cz, playerState.radius)) cx = nx; else playerState.vel *= 0.6;
-  if (!blockedAt(cx, nz, playerState.radius)) cz = nz; else playerState.vel *= 0.6;
+  const blockedX = blockedAt(nx, playerState.pos.z, playerState.radius);
+  const blockedZ = blockedAt(playerState.pos.x, nz, playerState.radius);
+  let cx = blockedX ? playerState.pos.x : nx;
+  let cz = blockedZ ? playerState.pos.z : nz;
+  if (blockedX && blockedZ) {
+    // head-on hit → knock back, small dmg, no stick
+    if (Math.abs(playerState.vel) > 6 && playerState.invuln <= 0) {
+      playerState.hp -= 4;
+      playerState.invuln = 0.35;
+    }
+    playerState.vel *= -0.45;
+  }
+  // single-axis blocks just slide without slowing
   playerState.pos.x = Math.max(-WORLD/2+5, Math.min(WORLD/2-5, cx));
   playerState.pos.z = Math.max(-WORLD/2+5, Math.min(WORLD/2-5, cz));
 
@@ -797,9 +807,9 @@ function update(dt) {
   player.rotation.y = Math.PI - playerState.heading;
 
   // ---- mission phase triggers ----
-  if (missionState.phase === 'infiltrate' && playerState.pos.distanceTo(RIVAL_HQ) < 7) {
+  if (missionState.phase === 'infiltrate' && playerState.pos.distanceTo(RIVAL_HQ) < 12) {
     onFlagGrabbed();
-  } else if (missionState.phase === 'extract' && playerState.hasFlag && playerState.pos.distanceTo(PLAYER_HQ) < 7) {
+  } else if (missionState.phase === 'extract' && playerState.hasFlag && playerState.pos.distanceTo(PLAYER_HQ) < 12) {
     onMissionComplete();
   }
 
@@ -888,8 +898,8 @@ function update(dt) {
     while (dh > Math.PI) dh -= Math.PI*2;
     while (dh < -Math.PI) dh += Math.PI*2;
     p.heading += Math.sign(dh) * Math.min(Math.abs(dh), dt * 1.6);
-    const targetSpeed = playing ? 20 : 0;
-    p.vel += (targetSpeed - p.vel) * dt * 1.0;
+    const targetSpeed = playing ? 32 : 0;
+    p.vel += (targetSpeed - p.vel) * dt * 1.4;
     const ef = fwdVec(p.heading);
     const enx = p.pos.x + ef.x * p.vel * dt;
     const enz = p.pos.z + ef.z * p.vel * dt;
@@ -938,7 +948,7 @@ function update(dt) {
     while (dh > Math.PI) dh -= Math.PI*2;
     while (dh < -Math.PI) dh += Math.PI*2;
     t.heading += Math.sign(dh) * Math.min(Math.abs(dh), dt * 1.4);
-    t.vel += (18 - t.vel) * dt * 0.9;
+    t.vel += (28 - t.vel) * dt * 1.1;
     const ef = fwdVec(t.heading);
     const enx = t.pos.x + ef.x * t.vel * dt;
     const enz = t.pos.z + ef.z * t.vel * dt;
@@ -948,7 +958,7 @@ function update(dt) {
     t.pos.x = ecx; t.pos.z = ecz;
     t.mesh.position.copy(t.pos);
     t.mesh.rotation.y = Math.PI - t.heading;
-    if (dist < 7 && playing) {
+    if (dist < 12 && playing) {
       failMission('LADRÃO PEGOU NOSSO FLAG');
     }
   }
