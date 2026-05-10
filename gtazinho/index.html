@@ -403,7 +403,7 @@ function makeCar(bodyColor, roofColor, accent=null) {
 const player = makeCar(0xFF6B35, 0x222);
 scene.add(player);
 const playerState = {
-  pos: PLAYER_HQ.clone().add(new THREE.Vector3(8, 0, 8)),
+  pos: PLAYER_HQ.clone().add(new THREE.Vector3(15, 0, 15)),
   vel: 0, heading: 0,
   hp: 100, cash: 0, jobs: 0,
   radius: 1.6, invuln: 0, fireCd: 0,
@@ -626,8 +626,8 @@ function failMission(reason) {
   playerState.hasFlag = false;
   flag.visible = false;
   document.getElementById('flag-tag').classList.add('hidden');
-  // teleport player back to HQ
-  playerState.pos.copy(PLAYER_HQ).add(new THREE.Vector3(8, 0, 8));
+  // teleport player back to HQ (away from collision radius)
+  playerState.pos.copy(PLAYER_HQ).add(new THREE.Vector3(15, 0, 15));
   playerState.vel = 0; playerState.heading = 0;
   setTimeout(() => showBriefing(missionState.cfg), 1300);
   missionState.phase = 'failed';
