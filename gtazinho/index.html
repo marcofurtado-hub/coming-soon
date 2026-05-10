@@ -402,9 +402,12 @@ function makeCar(bodyColor, roofColor, accent=null) {
 
 const player = makeCar(0xFF6B35, 0x222);
 scene.add(player);
+// spawn at the road intersection NE of player HQ, facing the rival HQ
+const SPAWN_POS = new THREE.Vector3(-40, 0, -40);
+const SPAWN_HEADING = Math.atan2(RIVAL_HQ.x - SPAWN_POS.x, -(RIVAL_HQ.z - SPAWN_POS.z));
 const playerState = {
-  pos: PLAYER_HQ.clone().add(new THREE.Vector3(15, 0, 15)),
-  vel: 0, heading: 0,
+  pos: SPAWN_POS.clone(),
+  vel: 0, heading: SPAWN_HEADING,
   hp: 100, cash: 0, jobs: 0,
   radius: 1.6, invuln: 0, fireCd: 0,
   hasFlag: false,
@@ -626,9 +629,9 @@ function failMission(reason) {
   playerState.hasFlag = false;
   flag.visible = false;
   document.getElementById('flag-tag').classList.add('hidden');
-  // teleport player back to HQ (away from collision radius)
-  playerState.pos.copy(PLAYER_HQ).add(new THREE.Vector3(15, 0, 15));
-  playerState.vel = 0; playerState.heading = 0;
+  // teleport player to safe road intersection
+  playerState.pos.copy(SPAWN_POS);
+  playerState.vel = 0; playerState.heading = SPAWN_HEADING;
   setTimeout(() => showBriefing(missionState.cfg), 1300);
   missionState.phase = 'failed';
 }
