@@ -2,7 +2,9 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, maximum-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <title>GTAzinho — Playable Preview</title>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
@@ -64,11 +66,32 @@
   #crosshair::before,#crosshair::after{content:"";position:absolute;background:#E94B5C}
   #crosshair::before{left:50%;top:-6px;width:2px;height:6px;transform:translateX(-50%)}
   #crosshair::after{top:50%;left:-6px;height:2px;width:6px;transform:translateY(-50%)}
-</style>
+
+  /* mobile joysticks */
+  #mobile-controls{position:fixed;inset:0;pointer-events:none;z-index:15;display:none}
+  #mobile-controls.on{display:block}
+  body.touch #crosshair{display:none}
+  .joystick{position:absolute;bottom:30px;width:140px;height:140px;border-radius:50%;background:rgba(0,0,0,0.35);border:2px solid rgba(255,210,74,0.5);pointer-events:auto;touch-action:none;backdrop-filter:blur(6px)}
+  #js-left{left:24px;border-color:rgba(158,246,124,0.55)}
+  #js-right{right:24px;border-color:rgba(233,75,92,0.65)}
+  .joystick .stick{position:absolute;left:50%;top:50%;width:62px;height:62px;border-radius:50%;background:rgba(255,255,255,0.55);transform:translate(-50%,-50%);pointer-events:none;box-shadow:0 4px 12px rgba(0,0,0,0.4)}
+  .joystick .label{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:10px;color:rgba(255,255,255,0.7);letter-spacing:0.15em;font-family:"SF Mono",Menlo,monospace;font-weight:700;pointer-events:none}
+  .joystick.active .label{display:none}
+  @media (max-width:600px){
+    #hud-help{display:none}
+    #mission{min-width:auto;max-width:90vw;font-size:13px;padding:8px 14px}
+    #mission .text{font-size:14px}
+    #hud-stats{font-size:10px;min-width:160px;padding:7px 10px}
+    #speed{bottom:auto;top:80px;right:14px;font-size:16px;padding:5px 10px}
+  }
 </head>
 <body>
 <div id="app"></div>
 <div id="crosshair"></div>
+<div id="mobile-controls">
+  <div id="js-left" class="joystick"><div class="label">DIRIGE</div><div class="stick"></div></div>
+  <div id="js-right" class="joystick"><div class="label">ATIRA</div><div class="stick"></div></div>
+</div>
 
 <div id="hud-help">
   <div class="title">GTAzinho · alpha</div>
@@ -704,6 +727,64 @@ window.addEventListener('resize', () => {
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
+// ============= mobile virtual joysticks =============
+const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+const mobileControlsEl = document.getElementById('mobile-controls');
+if (isTouch) {
+  document.body.classList.add('touch');
+  mobileControlsEl.classList.add('on');
+}
+const sticks = {
+  drive: { el: document.getElementById('js-left'),  stickEl: null, id: null, dx: 0, dy: 0, cx: 0, cy: 0, active: false },
+  aim:   { el: document.getElementById('js-right'), stickEl: null, id: null, dx: 0, dy: 0, cx: 0, cy: 0, active: false },
+};
+sticks.drive.stickEl = sticks.drive.el.querySelector('.stick');
+sticks.aim.stickEl   = sticks.aim.el.querySelector('.stick');
+
+function setupStick(key) {
+  const s = sticks[key];
+  const maxR = 56;
+  function place(t) {
+    let dx = t.clientX - s.cx;
+    let dy = t.clientY - s.cy;
+    const d = Math.hypot(dx, dy);
+    if (d > maxR) { dx *= maxR/d; dy *= maxR/d; }
+    s.dx = dx/maxR; s.dy = dy/maxR;
+    s.stickEl.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+  }
+  s.el.addEventListener('touchstart', e => {
+    e.preventDefault();
+    if (s.active) return;
+    const t = e.changedTouches[0];
+    const r = s.el.getBoundingClientRect();
+    s.cx = r.left + r.width/2; s.cy = r.top + r.height/2;
+    s.id = t.identifier; s.active = true;
+    s.el.classList.add('active');
+    place(t);
+  }, { passive: false });
+  s.el.addEventListener('touchmove', e => {
+    e.preventDefault();
+    for (const t of e.changedTouches) {
+      if (t.identifier === s.id) { place(t); break; }
+    }
+  }, { passive: false });
+  function release(e) {
+    for (const t of e.changedTouches) {
+      if (t.identifier === s.id) {
+        s.active = false; s.id = null;
+        s.dx = 0; s.dy = 0;
+        s.stickEl.style.transform = 'translate(-50%,-50%)';
+        s.el.classList.remove('active');
+        break;
+      }
+    }
+  }
+  s.el.addEventListener('touchend', release);
+  s.el.addEventListener('touchcancel', release);
+}
+setupStick('drive');
+setupStick('aim');
+
 const rc = new THREE.Raycaster();
 const groundPlane = new THREE.Plane(new THREE.Vector3(0,1,0), 0);
 function updateMouseWorld() {
@@ -771,14 +852,36 @@ nextMission();
 function update(dt) {
   elapsed += dt;
   updateMouseWorld();
+  // override aim with right joystick on touch
+  if (sticks.aim.active) {
+    const am = Math.hypot(sticks.aim.dx, sticks.aim.dy);
+    if (am > 0.18) {
+      mouse.world.x = playerState.pos.x + sticks.aim.dx * 30;
+      mouse.world.z = playerState.pos.z + sticks.aim.dy * 30;
+      mouse.down = true;
+    } else {
+      mouse.down = false;
+    }
+  } else if (isTouch) {
+    mouse.down = false;
+  }
   const playing = missionState.phase === 'infiltrate' || missionState.phase === 'extract';
 
-  // ---- driving ----
-  const accel = (keys['KeyW']||keys['ArrowUp']) ? 28 : 0;
-  const brake = (keys['KeyS']||keys['ArrowDown']) ? 22 : 0;
+  // ---- driving (keys + left joystick) ----
+  let accelF = (keys['KeyW']||keys['ArrowUp']) ? 1 : 0;
+  let brakeF = (keys['KeyS']||keys['ArrowDown']) ? 1 : 0;
+  let steerL = (keys['KeyA']||keys['ArrowLeft']) ? 1 : 0;
+  let steerR = (keys['KeyD']||keys['ArrowRight']) ? 1 : 0;
+  if (sticks.drive.active) {
+    const dy = sticks.drive.dy, dx = sticks.drive.dx;
+    if (dy < -0.18) accelF = Math.max(accelF, Math.min(1, -dy * 1.25));
+    if (dy >  0.18) brakeF = Math.max(brakeF, Math.min(1,  dy * 1.25));
+    if (dx < -0.18) steerL = 1;
+    if (dx >  0.18) steerR = 1;
+  }
+  const accel = accelF * 28;
+  const brake = brakeF * 22;
   const handBrake = keys['Space'] ? 1 : 0;
-  const steerL = (keys['KeyA']||keys['ArrowLeft']) ? 1 : 0;
-  const steerR = (keys['KeyD']||keys['ArrowRight']) ? 1 : 0;
 
   playerState.vel += (accel - brake) * dt;
   playerState.vel *= (1 - dt * (handBrake ? 4 : 0.55));
