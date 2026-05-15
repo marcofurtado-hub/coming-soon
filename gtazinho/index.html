@@ -10,7 +10,7 @@
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{height:100%;background:#87CEEB;color:#222;font-family:-apple-system,BlinkMacSystemFont,system-ui,sans-serif;overflow:hidden}
   #app{position:fixed;inset:0}
-  canvas{display:block;cursor:crosshair}
+  canvas{display:block;cursor:crosshair;touch-action:none;-webkit-user-select:none;user-select:none}
 
   #hud-help{position:fixed;top:14px;left:14px;background:rgba(0,0,0,0.6);backdrop-filter:blur(8px);border:1px solid rgba(255,180,80,0.5);border-radius:10px;padding:10px 12px;font-size:11px;line-height:1.55;z-index:10;max-width:260px;color:#fff}
   #hud-help .title{font-weight:700;color:#FFD24A;letter-spacing:0.06em;text-transform:uppercase;font-size:10px;margin-bottom:5px}
@@ -871,14 +871,18 @@ function update(dt) {
   // ---- driving (keys + left joystick) ----
   let accelF = (keys['KeyW']||keys['ArrowUp']) ? 1 : 0;
   let brakeF = (keys['KeyS']||keys['ArrowDown']) ? 1 : 0;
-  let steerL = (keys['KeyA']||keys['ArrowLeft']) ? 1 : 0;
-  let steerR = (keys['KeyD']||keys['ArrowRight']) ? 1 : 0;
+  let steerInput = 0;
+  if (keys['KeyD']||keys['ArrowRight']) steerInput += 1;
+  if (keys['KeyA']||keys['ArrowLeft'])  steerInput -= 1;
   if (sticks.drive.active) {
     const dy = sticks.drive.dy, dx = sticks.drive.dx;
-    if (dy < -0.18) accelF = Math.max(accelF, Math.min(1, -dy * 1.25));
-    if (dy >  0.18) brakeF = Math.max(brakeF, Math.min(1,  dy * 1.25));
-    if (dx < -0.18) steerL = 1;
-    if (dx >  0.18) steerR = 1;
+    const DZ = 0.15;
+    if (dy < -DZ) accelF = Math.max(accelF, Math.min(1, (-dy - DZ) / 0.7));
+    if (dy >  DZ) brakeF = Math.max(brakeF, Math.min(1, ( dy - DZ) / 0.7));
+    if (Math.abs(dx) > DZ) {
+      const analog = Math.sign(dx) * Math.min(1, (Math.abs(dx) - DZ) / 0.6);
+      if (Math.abs(analog) > Math.abs(steerInput)) steerInput = analog;
+    }
   }
   const accel = accelF * 28;
   const brake = brakeF * 22;
@@ -888,7 +892,7 @@ function update(dt) {
   playerState.vel *= (1 - dt * (handBrake ? 4 : 0.55));
   playerState.vel = Math.max(-12, Math.min(36, playerState.vel));
 
-  const steer = (steerR - steerL) * Math.min(Math.abs(playerState.vel)/6, 1.0);
+  const steer = steerInput * Math.min(Math.abs(playerState.vel)/6, 1.0);
   playerState.heading += steer * dt * 2.6 * Math.sign(playerState.vel || 1);
 
   const fwd = fwdVec(playerState.heading);
