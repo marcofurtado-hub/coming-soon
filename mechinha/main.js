@@ -28,6 +28,7 @@ const me = () => players.get(myId);
 
 const self = { x: 800, y: 600, a: 0, moving: false };
 let camYaw = -Math.PI / 2, camPitch = 0.3;
+let snapCamera = false;
 let lastPosSend = 0;
 
 // ---------- three ----------
@@ -37,7 +38,7 @@ const scene = new THREE.Scene();
 scene.background = new THREE.Color('#2a2e3d');
 const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 200);
 
-scene.add(new THREE.HemisphereLight(0xffffff, 0x8899aa, 1.15));
+scene.add(new THREE.HemisphereLight(0xffffff, 0x8899aa, 1.35));
 const sun = new THREE.DirectionalLight(0xffffff, 1.0);
 sun.position.set(10, 22, 8);
 scene.add(sun);
@@ -50,79 +51,136 @@ function resize() {
 addEventListener('resize', resize);
 resize();
 
-// ---------- mundo: fotos reais de escritório/festa ----------
+// ---------- mundo: escritório 3D + fotos reais como murais ----------
 const texLoader = new THREE.TextureLoader();
 const worldGroup = new THREE.Group();
 scene.add(worldGroup);
 
-function photoTex(name, setup) {
-  const t = texLoader.load(`assets/env/${name}.jpg`, tt => { if (setup) setup(tt); tt.needsUpdate = true; });
-  t.colorSpace = THREE.SRGBColorSpace;
-  return t;
-}
+const CONFETTI_COLORS = ['#ff5a5f', '#ffd166', '#06d6a0', '#4f9be8', '#e85fa8', '#9b6ed8', '#f5883d', '#4fc9c4'];
+const MURAL_PHOTOS = ['wall2', 'wall3', 'wall4', 'wall1', 'floor1', 'floor2'];
 
-// cobre um alvo de proporção targetA recortando o excesso da foto
-function coverCrop(tex, targetA) {
-  const a = tex.image.width / tex.image.height;
-  if (a > targetA) {
-    tex.repeat.set(targetA / a, 1);
-    tex.offset.set((1 - targetA / a) / 2, 0);
-  } else {
-    tex.repeat.set(1, a / targetA);
-    tex.offset.set(0, (1 - a / targetA) / 2);
+// carpete de escritório coberto de restos de festa — desenhado, nítido
+function makePartyCarpet(w, h) {
+  const c = document.createElement('canvas');
+  c.width = w; c.height = h;
+  const x = c.getContext('2d');
+  x.fillStyle = '#8d97a3';
+  x.fillRect(0, 0, w, h);
+  // fibra do carpete
+  for (let i = 0; i < 16000; i++) {
+    x.fillStyle = Math.random() < 0.5 ? 'rgba(255,255,255,0.05)' : 'rgba(20,30,40,0.06)';
+    x.fillRect(Math.random() * w, Math.random() * h, 1.6, 1.6);
   }
-}
-
-// parede: repete cópias da foto ao longo do comprimento, recortando na vertical
-function wallTexSetup(len) {
-  return tex => {
-    const a = tex.image.width / tex.image.height;
-    const copyA = Math.max(a, 1.2);
-    tex.wrapS = THREE.RepeatWrapping;
-    tex.repeat.x = len / (WALL_H * copyA);
-    if (a < copyA) {
-      tex.repeat.y = a / copyA;
-      tex.offset.y = (1 - a / copyA) / 2;
+  // manchas de bebida derramada
+  for (let i = 0; i < 10; i++) {
+    x.fillStyle = `rgba(${60 + Math.random() * 40},${40 + Math.random() * 30},${30 + Math.random() * 60},0.18)`;
+    x.beginPath();
+    x.ellipse(Math.random() * w, Math.random() * h, 30 + Math.random() * 70, 20 + Math.random() * 50, Math.random() * Math.PI, 0, Math.PI * 2);
+    x.fill();
+  }
+  // serpentinas caídas
+  for (let i = 0; i < 16; i++) {
+    x.strokeStyle = CONFETTI_COLORS[i % CONFETTI_COLORS.length];
+    x.lineWidth = 5;
+    x.beginPath();
+    let px = Math.random() * w, py = Math.random() * h;
+    x.moveTo(px, py);
+    for (let s = 0; s < 8; s++) {
+      px += (Math.random() - 0.5) * 120;
+      py += (Math.random() - 0.5) * 120;
+      x.quadraticCurveTo(px + (Math.random() - 0.5) * 60, py + (Math.random() - 0.5) * 60, px, py);
     }
-  };
+    x.stroke();
+  }
+  // confete
+  for (let i = 0; i < 1600; i++) {
+    x.save();
+    x.translate(Math.random() * w, Math.random() * h);
+    x.rotate(Math.random() * Math.PI);
+    x.fillStyle = CONFETTI_COLORS[(Math.random() * CONFETTI_COLORS.length) | 0];
+    if (Math.random() < 0.5) x.fillRect(-5, -3, 10, 6);
+    else { x.beginPath(); x.arc(0, 0, 4, 0, Math.PI * 2); x.fill(); }
+    x.restore();
+  }
+  return c;
 }
-
-const FLOOR_PHOTOS = ['floor1', 'floor2', 'floor3'];
-const WALL_PHOTOS = ['wall2', 'wall3', 'wall4', 'wall1']; // N, S, W, E
 
 function buildWorld(spec) {
   worldGroup.clear();
   const W = spec.w * U, H = spec.h * U;
-
-  // chão: uma foto de festa/confete por zona (cover-crop)
-  spec.zones.forEach((z, i) => {
-    const zw = z.w * U, zh = z.h * U;
-    const t = photoTex(FLOOR_PHOTOS[i % FLOOR_PHOTOS.length], tt => coverCrop(tt, zw / zh));
-    const m = new THREE.Mesh(new THREE.PlaneGeometry(zw, zh), new THREE.MeshBasicMaterial({ map: t }));
-    m.rotation.x = -Math.PI / 2;
-    m.position.set((z.x + z.w / 2) * U, 0, (z.y + z.h / 2) * U);
-    worldGroup.add(m);
-  });
-
-  // paredes: fotos de escritório
   const WALL_T = 0.3;
+
+  // chão (estende sob as paredes pra não abrir fresta)
+  const maxAniso = renderer.capabilities.getMaxAnisotropy();
+  const carpet = new THREE.CanvasTexture(makePartyCarpet(3072, Math.round(3072 * H / W)));
+  carpet.colorSpace = THREE.SRGBColorSpace;
+  carpet.anisotropy = maxAniso;
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(W + 2, H + 2), new THREE.MeshBasicMaterial({ map: carpet }));
+  floor.rotation.x = -Math.PI / 2;
+  floor.position.set(W / 2, 0, H / 2);
+  worldGroup.add(floor);
+
+  // paredes neutras de escritório + rodapé
+  const wallMat = new THREE.MeshBasicMaterial({ color: 0xdedbd4 });
+  const baseMat = new THREE.MeshLambertMaterial({ color: 0x4a4f58 });
   const wallDefs = [
-    { len: W, cx: W / 2, cz: -WALL_T / 2, horizontal: true },
-    { len: W, cx: W / 2, cz: H + WALL_T / 2, horizontal: true },
-    { len: H, cx: -WALL_T / 2, cz: H / 2, horizontal: false },
-    { len: H, cx: W + WALL_T / 2, cz: H / 2, horizontal: false },
+    { len: W + WALL_T * 2, cx: W / 2, cz: -WALL_T / 2, horiz: true, inward: 1 },
+    { len: W + WALL_T * 2, cx: W / 2, cz: H + WALL_T / 2, horiz: true, inward: -1 },
+    { len: H, cx: -WALL_T / 2, cz: H / 2, horiz: false, inward: 1 },
+    { len: H, cx: W + WALL_T / 2, cz: H / 2, horiz: false, inward: -1 },
   ];
-  wallDefs.forEach((wd, i) => {
-    const t = photoTex(WALL_PHOTOS[i % WALL_PHOTOS.length], wallTexSetup(wd.len));
-    const geo = wd.horizontal
+  for (const wd of wallDefs) {
+    const geo = wd.horiz
       ? new THREE.BoxGeometry(wd.len, WALL_H, WALL_T)
       : new THREE.BoxGeometry(WALL_T, WALL_H, wd.len);
-    const m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ map: t }));
+    const m = new THREE.Mesh(geo, wallMat);
     m.position.set(wd.cx, WALL_H / 2, wd.cz);
     worldGroup.add(m);
-  });
+    const bgeo = wd.horiz
+      ? new THREE.BoxGeometry(wd.len, 0.14, 0.05)
+      : new THREE.BoxGeometry(0.05, 0.14, wd.len);
+    const b = new THREE.Mesh(bgeo, baseMat);
+    b.position.set(
+      wd.cx + (wd.horiz ? 0 : wd.inward * (WALL_T / 2 + 0.025)),
+      0.07,
+      wd.cz + (wd.horiz ? wd.inward * (WALL_T / 2 + 0.025) : 0),
+    );
+    worldGroup.add(b);
+  }
 
-  // teto de escritório (procedural: placas + luminárias)
+  // murais: as fotos reais, emolduradas, na proporção certa — hotspots de camuflagem
+  const frameMat = new THREE.MeshLambertMaterial({ color: 0x2b2e36 });
+  let photoIdx = 0;
+  for (const wd of wallDefs) {
+    for (const frac of [0.25, 0.62, 0.87]) {
+      const name = MURAL_PHOTOS[photoIdx++ % MURAL_PHOTOS.length];
+      const mh = 1.9 + Math.random() * 0.4;
+      const cy = 1.45;
+      const along = wd.len * frac;
+      const px = wd.horiz ? (wd.cx - wd.len / 2 + along) : wd.cx + wd.inward * (WALL_T / 2 + 0.03);
+      const pz = wd.horiz ? wd.cz + wd.inward * (WALL_T / 2 + 0.03) : (wd.cz - wd.len / 2 + along);
+      const rotY = wd.horiz ? (wd.inward === 1 ? 0 : Math.PI) : (wd.inward === 1 ? Math.PI / 2 : -Math.PI / 2);
+      const t = texLoader.load(`assets/env/${name}.jpg`, tt => {
+        tt.colorSpace = THREE.SRGBColorSpace;
+        tt.anisotropy = maxAniso;
+        const aspect = tt.image.width / tt.image.height;
+        // não deixa o mural vazar pelos cantos da parede
+        const maxW = Math.max(1.2, 2 * Math.min(along, wd.len - along) - 0.5);
+        const mw = Math.min(mh * aspect, 6.5, maxW);
+        const photo = new THREE.Mesh(new THREE.PlaneGeometry(mw, mh), new THREE.MeshBasicMaterial({ map: tt }));
+        photo.position.set(px, cy, pz);
+        photo.rotation.y = rotY;
+        const frame = new THREE.Mesh(new THREE.BoxGeometry(mw + 0.12, mh + 0.12, 0.04), frameMat);
+        frame.position.set(px, cy, pz);
+        frame.rotation.y = rotY;
+        frame.translateZ(-0.025);
+        worldGroup.add(frame, photo);
+      });
+      void t;
+    }
+  }
+
+  // teto de escritório (placas + luminárias)
   const ceil = document.createElement('canvas');
   ceil.width = ceil.height = 256;
   const cc = ceil.getContext('2d');
@@ -134,21 +192,87 @@ function buildWorld(spec) {
   ceilTex.colorSpace = THREE.SRGBColorSpace;
   ceilTex.wrapS = ceilTex.wrapT = THREE.RepeatWrapping;
   ceilTex.repeat.set(W / 2.4, H / 2.4);
-  const ceiling = new THREE.Mesh(new THREE.PlaneGeometry(W, H), new THREE.MeshBasicMaterial({ map: ceilTex }));
+  ceilTex.anisotropy = maxAniso;
+  const ceiling = new THREE.Mesh(new THREE.PlaneGeometry(W + 2, H + 2), new THREE.MeshBasicMaterial({ map: ceilTex }));
   ceiling.rotation.x = Math.PI / 2;
   ceiling.position.set(W / 2, WALL_H, H / 2);
   worldGroup.add(ceiling);
 
-  // caixas de papelão (props da mudança/festa)
+  // obstáculos viram mobília: mesas de trabalho e pilhas de caixa, alternando
+  const deskTopMat = new THREE.MeshLambertMaterial({ color: 0xb08a5a });
+  const deskLegMat = new THREE.MeshLambertMaterial({ color: 0x5a5f68 });
+  const screenMat = new THREE.MeshBasicMaterial({ color: 0x1a2436 });
+  const monitorMat = new THREE.MeshLambertMaterial({ color: 0x22252d });
+  const cupMats = CONFETTI_COLORS.map(c => new THREE.MeshLambertMaterial({ color: c }));
   const crateTex = new THREE.CanvasTexture(PatternKit.crate());
   crateTex.colorSpace = THREE.SRGBColorSpace;
-  for (const o of spec.obstacles) {
-    const m = new THREE.Mesh(
-      new THREE.BoxGeometry(o.w * U, 1.2, o.h * U),
-      new THREE.MeshLambertMaterial({ map: crateTex }),
-    );
-    m.position.set((o.x + o.w / 2) * U, 0.6, (o.y + o.h / 2) * U);
-    worldGroup.add(m);
+  const crateMat = new THREE.MeshLambertMaterial({ map: crateTex });
+
+  spec.obstacles.forEach((o, i) => {
+    const ow = o.w * U, oh = o.h * U;
+    const cx = (o.x + o.w / 2) * U, cz = (o.y + o.h / 2) * U;
+    const g = new THREE.Group();
+    if (i % 2 === 0) {
+      // mesa de escritório
+      const top = new THREE.Mesh(new THREE.BoxGeometry(ow, 0.06, oh), deskTopMat);
+      top.position.y = 0.74;
+      g.add(top);
+      for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
+        const leg = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.72, 0.07), deskLegMat);
+        leg.position.set(sx * (ow / 2 - 0.09), 0.36, sz * (oh / 2 - 0.09));
+        g.add(leg);
+      }
+      // monitor torto (festa...)
+      const mon = new THREE.Group();
+      const scr = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.32, 0.035), monitorMat);
+      const face = new THREE.Mesh(new THREE.PlaneGeometry(0.46, 0.26), screenMat);
+      face.position.z = 0.02;
+      scr.add(face);
+      scr.position.y = 0.34;
+      const stand = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.05, 0.16), deskLegMat);
+      stand.position.y = 0.1;
+      mon.add(scr, stand);
+      mon.position.set((Math.random() - 0.5) * ow * 0.3, 0.77, (Math.random() - 0.5) * oh * 0.3);
+      mon.rotation.y = Math.random() * Math.PI * 2;
+      g.add(mon);
+      // copos de festa esquecidos
+      for (let k = 0; k < 2 + (i % 2); k++) {
+        const cup = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.028, 0.1, 10), cupMats[(i + k) % cupMats.length]);
+        cup.position.set((Math.random() - 0.5) * ow * 0.7, 0.82, (Math.random() - 0.5) * oh * 0.7);
+        if (Math.random() < 0.35) { cup.rotation.z = Math.PI / 2; cup.position.y = 0.79; }
+        g.add(cup);
+      }
+    } else {
+      // pilha de caixas de papelão
+      const b1 = new THREE.Mesh(new THREE.BoxGeometry(ow, 0.7, oh), crateMat);
+      b1.position.y = 0.35;
+      const b2 = new THREE.Mesh(new THREE.BoxGeometry(ow * 0.7, 0.55, oh * 0.7), crateMat);
+      b2.position.set(ow * 0.06, 0.7 + 0.275, -oh * 0.05);
+      b2.rotation.y = 0.3 + Math.random() * 0.5;
+      g.add(b1, b2);
+    }
+    g.position.set(cx, 0, cz);
+    worldGroup.add(g);
+  });
+
+  // balões perdidos pelo chão e no teto
+  const balloonGeo = new THREE.SphereGeometry(0.16, 12, 12);
+  const stringMat = new THREE.MeshBasicMaterial({ color: 0x666a72 });
+  for (let i = 0; i < 16; i++) {
+    const mat = new THREE.MeshLambertMaterial({ color: CONFETTI_COLORS[i % CONFETTI_COLORS.length] });
+    const b = new THREE.Mesh(balloonGeo, mat);
+    const onCeiling = i % 3 === 0;
+    const bx = 0.8 + Math.random() * (W - 1.6);
+    const bz = 0.8 + Math.random() * (H - 1.6);
+    b.position.set(bx, onCeiling ? WALL_H - 0.18 : 0.16, bz);
+    b.scale.y = 1.15;
+    worldGroup.add(b);
+    if (onCeiling) {
+      // barbante pendurado — explica o balão no teto
+      const str = new THREE.Mesh(new THREE.CylinderGeometry(0.006, 0.006, 0.7, 4), stringMat);
+      str.position.set(bx, WALL_H - 0.18 - 0.35 - 0.16, bz);
+      worldGroup.add(str);
+    }
   }
 }
 
@@ -167,9 +291,10 @@ function makeNameTag(name) {
   x.fillText(name, 128, 32);
   const t = new THREE.CanvasTexture(c);
   t.colorSpace = THREE.SRGBColorSpace;
-  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: t, depthTest: false, transparent: true }));
-  s.scale.set(2.4, 0.6, 1);
-  s.position.y = 2.35;
+  // sizeAttenuation false = tamanho constante na tela (nunca fica gigante de perto)
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: t, depthTest: false, transparent: true, sizeAttenuation: false }));
+  s.scale.set(0.12, 0.03, 1);
+  s.position.y = 2.15;
   return s;
 }
 
@@ -195,11 +320,11 @@ function makeBean(p) {
   const eyeMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
   const pupilMat = new THREE.MeshBasicMaterial({ color: 0x1b1e2b });
   const whites = [], pupils = [];
-  for (const dx of [-0.19, 0.19]) {
-    const w = new THREE.Mesh(new THREE.SphereGeometry(0.1, 10, 10), eyeMat);
-    w.position.set(dx, 1.28, 0.47);
-    const pu = new THREE.Mesh(new THREE.SphereGeometry(0.045, 8, 8), pupilMat);
-    pu.position.set(dx, 1.28, 0.555);
+  for (const dx of [-0.17, 0.17]) {
+    const w = new THREE.Mesh(new THREE.SphereGeometry(0.085, 10, 10), eyeMat);
+    w.position.set(dx, 1.28, 0.44);
+    const pu = new THREE.Mesh(new THREE.SphereGeometry(0.04, 8, 8), pupilMat);
+    pu.position.set(dx, 1.28, 0.515);
     g.add(w, pu);
     whites.push(w); pupils.push(pu);
   }
@@ -522,13 +647,34 @@ Net.on('pos', m => {
       if (adoptServerPos) {
         self.x = x; self.y = y;
         adoptServerPos = false;
-        camYaw = Math.atan2(mapSpec.h / 2 - y, mapSpec.w / 2 - x);
+        camYaw = pickSpawnYaw(x, y);
+        snapCamera = true; // sem lerp vindo de posição velha
       }
       continue;
     }
     p.x = x; p.y = y; p.a = a; p.moving = !!mv;
   }
 });
+
+// escolhe um ângulo inicial de câmera cujo ponto de câmera fique livre
+// (dentro da sala e sem parede/mobília no caminho)
+function pickSpawnYaw(x, y) {
+  const base = Math.atan2(mapSpec.h / 2 - y, mapSpec.w / 2 - x);
+  const target = new THREE.Vector3(x * U, 1.25, y * U);
+  for (const off of [0, 0.6, -0.6, 1.2, -1.2, 1.8, -1.8, Math.PI]) {
+    const yaw = base + off;
+    const distH = 4.4 * Math.cos(camPitch);
+    const cx = target.x - Math.cos(yaw) * distH;
+    const cz = target.z - Math.sin(yaw) * distH;
+    if (cx < 0.6 || cz < 0.6 || cx > mapSpec.w * U - 0.6 || cz > mapSpec.h * U - 0.6) continue;
+    const dir = new THREE.Vector3(cx - target.x, 4.4 * Math.sin(camPitch), cz - target.z);
+    const len = dir.length();
+    camRay.set(target, dir.normalize());
+    camRay.far = len;
+    if (camRay.intersectObjects(worldGroup.children, true).length === 0) return yaw;
+  }
+  return base;
+}
 
 Net.on('paintset', m => {
   const p = players.get(m.id);
@@ -759,7 +905,9 @@ function update(dt, now) {
     for (const pu of pl.pupils) pu.visible = open;
 
     // nametag: seekers sempre; hiders só fora da caçada, ou se for você/fantasma
-    pl.tag.visible = pl.role === 'seeker' || phase !== 'hunt' || pl.found || isMe;
+    // (e some além de 14m pra não virar sopa de texto)
+    const tagDist = camera.position.distanceTo(pl.mesh.position);
+    pl.tag.visible = (pl.role === 'seeker' || phase !== 'hunt' || pl.found || isMe) && tagDist < 14;
 
     // cone de visão
     if (pl.cone) {
@@ -786,9 +934,10 @@ function update(dt, now) {
     dir.normalize();
     camRay.set(target, dir);
     camRay.far = len;
-    const hits = camRay.intersectObjects(worldGroup.children, false);
+    const hits = camRay.intersectObjects(worldGroup.children, true);
     if (hits.length) desired.copy(target).addScaledVector(dir, Math.max(0.7, hits[0].distance - 0.35));
-    camera.position.lerp(desired, Math.min(1, dt * 14));
+    if (snapCamera) { camera.position.copy(desired); snapCamera = false; }
+    else camera.position.lerp(desired, Math.min(1, dt * 14));
     camera.lookAt(target);
   }
 }
