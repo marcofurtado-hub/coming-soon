@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Mechinha</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<canvas id="game"></canvas>
+
+<!-- HOME -->
+<div id="home" class="screen">
+  <div class="panel">
+    <h1 class="logo">MECHINHA</h1>
+    <p class="tagline">pinte-se. suma. não pisque.</p>
+    <input id="nameInput" type="text" maxlength="16" placeholder="seu nome" autocomplete="off">
+    <button id="btnQuick" class="btn primary">Jogar rápido</button>
+    <div class="row">
+      <button id="btnCreate" class="btn">Criar sala</button>
+      <input id="codeInput" type="text" maxlength="4" placeholder="CÓDIGO" autocomplete="off">
+      <button id="btnJoin" class="btn">Entrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- LOBBY -->
+<div id="lobby" class="screen hidden">
+  <div class="panel">
+    <p class="tagline">sala</p>
+    <h1 id="roomCode" class="logo small">----</h1>
+    <ul id="playerList"></ul>
+    <p class="hint">a sala completa com bots até 6 jogadores</p>
+    <button id="btnStart" class="btn primary">Começar rodada</button>
+    <p id="waitHost" class="hint hidden">esperando o host começar…</p>
+  </div>
+</div>
+
+<!-- HUD (dentro do jogo) -->
+<div id="hud" class="hidden">
+  <div id="topBar">
+    <span id="roleBadge"></span>
+    <span id="timer">0:00</span>
+    <span id="foundCount"></span>
+  </div>
+  <div id="banner" class="hidden"></div>
+  <button id="btnPaint" class="btn primary hidden">🖌️ Pintar</button>
+  <div id="joyZone"></div>
+</div>
+
+<!-- PINTURA -->
+<div id="paintUI" class="screen hidden">
+  <div id="paintTop">
+    <span>💧 toque no cenário pra pegar a cor, depois pinte o corpo</span>
+    <span id="paintTimer"></span>
+  </div>
+  <div id="paintStage">
+    <canvas id="paintBg"></canvas>
+    <canvas id="paintCanvas"></canvas>
+  </div>
+  <div id="paintTools">
+    <div id="palette"></div>
+    <div class="toolRow">
+      <button id="toolPick" class="tool sel">💧</button>
+      <div id="colorChip"></div>
+      <button class="tool brushSize" data-size="8">●</button>
+      <button class="tool brushSize sel" data-size="18">⬤</button>
+      <button class="tool brushSize" data-size="34">⬛</button>
+      <button id="toolFill" class="tool">🪣</button>
+      <button id="toolClear" class="tool">🗑️</button>
+      <button id="btnPaintDone" class="btn primary">Pronto!</button>
+    </div>
+  </div>
+</div>
+
+<!-- REVELAÇÃO -->
+<div id="reveal" class="screen hidden">
+  <div class="panel wide">
+    <h2 id="revealTitle">Fim da rodada!</h2>
+    <div id="gallery"></div>
+    <ol id="scoreboard"></ol>
+    <p class="hint" id="nextRound"></p>
+  </div>
+</div>
+
+<!-- venda do caçador durante a pintura -->
+<div id="blindfold" class="screen hidden" style="background:rgba(12,14,24,0.97);flex-direction:column;gap:14px;z-index:5;">
+  <div style="font-size:64px">🙈</div>
+  <div style="color:#9aa3b8;font-weight:700">os camaleões estão se pintando…</div>
+</div>
+
+<div id="toast" class="hidden"></div>
+
+<script src="gamelogic.js"></script>
+<script src="net.js"></script>
+<script src="patterns.js"></script>
+<script src="joystick.js"></script>
+<script src="paint.js"></script>
+<script type="module" src="main.js"></script>
+</body>
+</html>
