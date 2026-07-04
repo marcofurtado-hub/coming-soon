@@ -71,6 +71,19 @@ input[type=text]:focus { border-color: #4F9BE8; }
 }
 #joyZone { position: absolute; left: 0; bottom: 0; width: 45vw; height: 45vh; pointer-events: auto; }
 
+#crosshair {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  width: 22px; height: 22px; border: 2.5px solid rgba(255,255,255,0.9); border-radius: 50%;
+  box-shadow: 0 0 6px rgba(0,0,0,0.5), inset 0 0 4px rgba(0,0,0,0.35);
+  pointer-events: none;
+}
+#crosshair::after {
+  content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  width: 4px; height: 4px; border-radius: 50%; background: rgba(255,255,255,0.95);
+}
+#crosshair.hot { border-color: #E8655F; box-shadow: 0 0 10px rgba(232,101,95,0.8); }
+#crosshair.hot::after { background: #E8655F; }
+
 /* Pintura */
 #paintUI { flex-direction: column; background: #14182620; backdrop-filter: blur(2px); background: rgba(16,19,31,.92); }
 #paintTop { display: flex; justify-content: space-between; width: 100%; padding: max(10px, env(safe-area-inset-top)) 16px 8px; font-size: 13px; color: #9aa3b8; }

@@ -8,8 +8,8 @@ const U = 0.025;               // unidade do servidor → metros
 const BEAN_R = 0.55, BEAN_H = 1.8;
 const HIDER_SPEED = 190, SEEKER_SPEED = 240; // unidades/s (iguais ao servidor)
 const VISION_RADIUS = 400, VISION_HALF = (50 * Math.PI) / 180;
-const WALL_H = 3.2;
-const PITCH_MIN = 0.08, PITCH_MAX = 0.42; // indoor: câmera não fura o teto
+const WALL_H = 4.2; // pé-direito alto: câmera pode subir e ver a sala
+const PITCH_MIN = 0.08, PITCH_MAX = 0.85;
 
 const $ = id => document.getElementById(id);
 const screens = { home: $('home'), lobby: $('lobby'), reveal: $('reveal') };
@@ -27,7 +27,8 @@ let adoptServerPos = false;
 const me = () => players.get(myId);
 
 const self = { x: 800, y: 600, a: 0, moving: false };
-let camYaw = -Math.PI / 2, camPitch = 0.3;
+let camYaw = -Math.PI / 2, camPitch = 0.42;
+let camDist = 6.0; // zoom com a roda do mouse (3–9m)
 let snapCamera = false;
 let lastTickSec = -1;
 let lastPosSend = 0;
@@ -622,7 +623,9 @@ Net.on('phase', m => {
     adoptServerPos = true;
     showGame();
     if (role === 'hider') {
-      banner('🎨 Você é <b>CAMALEÃO</b>!<br>Encoste numa parede ou num canto, aperte <b>Pintar</b> e use o conta-gotas 💧 pra copiar o cenário.', 5500);
+      banner(IS_DESKTOP
+        ? '🎨 Você é <b>CAMALEÃO</b>!<br>WASD anda · clique trava a câmera · <b>E</b> abre a pintura (conta-gotas 💧 copia o cenário).'
+        : '🎨 Você é <b>CAMALEÃO</b>!<br>Encoste numa parede ou num canto, aperte <b>Pintar</b> e use o conta-gotas 💧 pra copiar o cenário.', 5500);
       $('btnPaint').classList.remove('hidden');
     } else {
       $('btnPaint').classList.add('hidden');
@@ -632,10 +635,14 @@ Net.on('phase', m => {
     PaintUI.close();
     $('btnPaint').classList.add('hidden');
     showGame();
-    if (role === 'seeker') banner('🔍 <b>CAÇA LIBERADA!</b><br>Toque num camaleão pra pegar. Errou = espera.', 4000);
-    else banner('🫥 <b>Fique parado e ganhe pontos na frente dos caçadores.</b><br>Não pisque…', 4000);
+    if (role === 'seeker') {
+      banner(IS_DESKTOP
+        ? '🔍 <b>CAÇA LIBERADA!</b><br>Clique pra travar a mira ⊕ e clique no camaleão pra pegar. Errou = espera.'
+        : '🔍 <b>CAÇA LIBERADA!</b><br>Toque num camaleão pra pegar. Errou = espera.', 4500);
+    } else banner('🫥 <b>Fique parado e ganhe pontos na frente dos caçadores.</b><br>Não pisque…', 4000);
     SFX.horn();
   } else if (phase === 'lobby') {
+    if (document.exitPointerLock) document.exitPointerLock();
     show('lobby');
     renderLobby();
   }
@@ -665,11 +672,11 @@ function pickSpawnYaw(x, y) {
   const target = new THREE.Vector3(x * U, 1.25, y * U);
   for (const off of [0, 0.6, -0.6, 1.2, -1.2, 1.8, -1.8, Math.PI]) {
     const yaw = base + off;
-    const distH = 4.4 * Math.cos(camPitch);
+    const distH = camDist * Math.cos(camPitch);
     const cx = target.x - Math.cos(yaw) * distH;
     const cz = target.z - Math.sin(yaw) * distH;
     if (cx < 0.6 || cz < 0.6 || cx > mapSpec.w * U - 0.6 || cz > mapSpec.h * U - 0.6) continue;
-    const dir = new THREE.Vector3(cx - target.x, 4.4 * Math.sin(camPitch), cz - target.z);
+    const dir = new THREE.Vector3(cx - target.x, Math.min(camDist * Math.sin(camPitch), WALL_H - 1.55), cz - target.z);
     const len = dir.length();
     camRay.set(target, dir.normalize());
     camRay.far = len;
@@ -708,10 +715,27 @@ Net.on('miss', m => {
   if (m.by === myId) { toast('❌ Errou! Espera 1,5s…', 1400); SFX.miss(); }
 });
 
-Net.on('reveal', m => { showRevealScreen(m.results); SFX.fanfare(); });
+Net.on('reveal', m => {
+  if (document.exitPointerLock) document.exitPointerLock();
+  showRevealScreen(m.results);
+  SFX.fanfare();
+});
+
+// atalhos de teclado (desktop)
+window.addEventListener('keydown', e => {
+  if (e.repeat) return;
+  const k = e.key.toLowerCase();
+  if (k === 'e' && !$('btnPaint').classList.contains('hidden') && !PaintUI.isOpen()) $('btnPaint').onclick();
+  if (k === 'escape' && PaintUI.isOpen()) PaintUI.close();
+  if (e.key === 'Enter') {
+    if (!screens.home.classList.contains('hidden')) $('btnQuick').onclick();
+    else if (!screens.lobby.classList.contains('hidden') && hostId === myId) $('btnStart').onclick();
+  }
+});
 
 // ---------- pintura ----------
 $('btnPaint').onclick = () => {
+  if (document.exitPointerLock) document.exitPointerLock();
   PaintUI.open(takePaintSnapshot(), (dataURL, quality) => {
     Net.send({ t: 'paint', data: dataURL, q: +quality.toFixed(3) });
     const p = me();
@@ -727,8 +751,38 @@ $('btnPaint').onclick = () => {
 
 // ---------- input: girar câmera / tag ----------
 const gameCanvas = $('game');
+const IS_DESKTOP = matchMedia('(pointer: fine)').matches && !('ontouchstart' in window);
+if (IS_DESKTOP) $('joyZone').style.display = 'none';
+
+const isLocked = () => document.pointerLockElement === gameCanvas;
+
+// mouse-look (desktop): mouse gira a câmera enquanto travado
+document.addEventListener('mousemove', e => {
+  if (!isLocked()) return;
+  camYaw += e.movementX * 0.0032;
+  camPitch = Math.max(PITCH_MIN, Math.min(PITCH_MAX, camPitch + e.movementY * 0.0026));
+});
+document.addEventListener('pointerlockchange', () => {
+  if (!isLocked()) $('crosshair').classList.add('hidden');
+});
+
+// zoom: roda do mouse ajusta a distância da câmera
+window.addEventListener('wheel', e => {
+  if (phase !== 'paint' && phase !== 'hunt') return;
+  camDist = Math.max(3, Math.min(9, camDist + e.deltaY * 0.006));
+}, { passive: true });
+
 let drag = null;
 gameCanvas.addEventListener('pointerdown', e => {
+  if (isLocked()) {
+    // clique travado = captura na mira
+    handleTap(innerWidth / 2, innerHeight / 2);
+    return;
+  }
+  if (IS_DESKTOP && (phase === 'paint' || phase === 'hunt') && !PaintUI.isOpen()) {
+    // tenta travar o mouse; se o browser negar, o drag abaixo segue valendo
+    try { gameCanvas.requestPointerLock(); } catch { /* fallback: drag */ }
+  }
   drag = { id: e.pointerId, x: e.clientX, y: e.clientY, t0: performance.now(), moved: 0 };
   gameCanvas.setPointerCapture(e.pointerId);
 });
@@ -751,6 +805,7 @@ gameCanvas.addEventListener('pointercancel', () => { drag = null; });
 const raycaster = new THREE.Raycaster();
 const camRay = new THREE.Raycaster();
 const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+const CENTER_NDC = new THREE.Vector2(0, 0);
 
 function handleTap(sx, sy) {
   if (phase !== 'hunt') return;
@@ -879,6 +934,21 @@ function update(dt, now) {
     const sec = Math.ceil(remain / 1000);
     if (remain > 0 && sec <= 5 && sec !== lastTickSec) { lastTickSec = sec; SFX.tick(); }
     if (sec > 5) lastTickSec = -1;
+
+    // mira central (desktop, caçador com mouse travado)
+    const ch = $('crosshair');
+    const showCh = isLocked() && phase === 'hunt' && p.role === 'seeker' && !p.found;
+    ch.classList.toggle('hidden', !showCh);
+    if (showCh) {
+      raycaster.setFromCamera(CENTER_NDC, camera);
+      const hits = raycaster.intersectObjects(beanBodies, false).filter(h => h.object.userData.pid !== myId);
+      let hot = false;
+      if (hits.length) {
+        const t = players.get(hits[0].object.userData.pid);
+        hot = !!t && t.role === 'hider' && !t.found;
+      }
+      ch.classList.toggle('hot', hot);
+    }
   }
 
   // posiciona beans
@@ -930,10 +1000,10 @@ function update(dt, now) {
   // câmera terceira pessoa com "spring arm" (encurta se algo bloquear)
   if (mapSpec) {
     const target = new THREE.Vector3(self.x * U, 1.25, self.y * U);
-    const distH = 4.4 * Math.cos(camPitch);
+    const distH = camDist * Math.cos(camPitch);
     const desired = new THREE.Vector3(
       target.x - Math.cos(camYaw) * distH,
-      target.y + 4.4 * Math.sin(camPitch),
+      Math.min(target.y + camDist * Math.sin(camPitch), WALL_H - 0.3),
       target.z - Math.sin(camYaw) * distH,
     );
     const dir = desired.clone().sub(target);
