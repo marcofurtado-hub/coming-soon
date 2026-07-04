@@ -29,6 +29,7 @@ const me = () => players.get(myId);
 const self = { x: 800, y: 600, a: 0, moving: false };
 let camYaw = -Math.PI / 2, camPitch = 0.3;
 let snapCamera = false;
+let lastTickSec = -1;
 let lastPosSend = 0;
 
 // ---------- three ----------
@@ -633,6 +634,7 @@ Net.on('phase', m => {
     showGame();
     if (role === 'seeker') banner('🔍 <b>CAÇA LIBERADA!</b><br>Toque num camaleão pra pegar. Errou = espera.', 4000);
     else banner('🫥 <b>Fique parado e ganhe pontos na frente dos caçadores.</b><br>Não pisque…', 4000);
+    SFX.horn();
   } else if (phase === 'lobby') {
     show('lobby');
     renderLobby();
@@ -696,22 +698,22 @@ Net.on('found', m => {
     p.found = true;
     if (p.bodyMat) p.bodyMat.opacity = 0.35;
   }
-  if (m.id === myId) banner('😵 <b>Te acharam!</b> Agora você assiste como fantasma.', 3500);
-  else if (m.by === myId) toast('🎯 Pegou! +100');
-  else toast(`${players.get(m.id)?.name || '?'} foi encontrado!`);
+  if (m.id === myId) { banner('😵 <b>Te acharam!</b> Agora você assiste como fantasma.', 3500); SFX.caughtMe(); }
+  else if (m.by === myId) { toast('🎯 Pegou! +100'); SFX.gotOne(); }
+  else { toast(`${players.get(m.id)?.name || '?'} foi encontrado!`); SFX.found(); }
   updateHudCounts();
 });
 
 Net.on('miss', m => {
-  if (m.by === myId) toast('❌ Errou! Espera 1,5s…', 1400);
+  if (m.by === myId) { toast('❌ Errou! Espera 1,5s…', 1400); SFX.miss(); }
 });
 
-Net.on('reveal', m => showRevealScreen(m.results));
+Net.on('reveal', m => { showRevealScreen(m.results); SFX.fanfare(); });
 
 // ---------- pintura ----------
 $('btnPaint').onclick = () => {
-  PaintUI.open(takePaintSnapshot(), dataURL => {
-    Net.send({ t: 'paint', data: dataURL });
+  PaintUI.open(takePaintSnapshot(), (dataURL, quality) => {
+    Net.send({ t: 'paint', data: dataURL, q: +quality.toFixed(3) });
     const p = me();
     if (p) {
       p.paint = dataURL;
@@ -719,7 +721,7 @@ $('btnPaint').onclick = () => {
       img.onload = () => { p.paintImg = img; applyBodyPaint(p, img); };
       img.src = dataURL;
     }
-    toast('Camuflagem enviada! Fica parado aí… 🤫');
+    toast(`Camuflagem ${Math.round(quality * 100)}% 🦎 — fica parado aí… 🤫`, 3000);
   });
 };
 
@@ -802,7 +804,8 @@ function showRevealScreen(results) {
     }
     card.appendChild(cv);
     const info = document.createElement('div');
-    info.innerHTML = `<div class="nm">${esc(r.name)}</div><div>${r.found ? '😵' : '🏆'} ${r.roundScore}pts</div>`;
+    const camoPct = r.camoQ != null ? ` · 🦎${Math.round(r.camoQ * 100)}%` : '';
+    info.innerHTML = `<div class="nm">${esc(r.name)}</div><div>${r.found ? '😵' : '🏆'} ${r.roundScore}pts${camoPct}</div>`;
     card.appendChild(info);
     g.appendChild(card);
   }
@@ -872,6 +875,10 @@ function update(dt, now) {
     const txt = `${mm}:${String(ss).padStart(2, '0')}`;
     $('timer').textContent = txt;
     if (PaintUI.isOpen()) PaintUI.setTimer(txt);
+    // tique-taque nos últimos 5 segundos da fase
+    const sec = Math.ceil(remain / 1000);
+    if (remain > 0 && sec <= 5 && sec !== lastTickSec) { lastTickSec = sec; SFX.tick(); }
+    if (sec > 5) lastTickSec = -1;
   }
 
   // posiciona beans

@@ -46,6 +46,21 @@ function randInt(min, max) { return Math.floor(rand(min, max + 1)); }
 function pick(arr) { return arr[randInt(0, arr.length - 1)]; }
 function dist(ax, ay, bx, by) { return Math.hypot(ax - bx, ay - by); }
 
+// segmento AB cruza o retângulo r? (Liang-Barsky)
+function segIntersectsRect(ax, ay, bx, by, r) {
+  const dx = bx - ax, dy = by - ay;
+  let t0 = 0, t1 = 1;
+  const p = [-dx, dx, -dy, dy];
+  const q = [ax - r.x, r.x + r.w - ax, ay - r.y, r.y + r.h - ay];
+  for (let i = 0; i < 4; i++) {
+    if (p[i] === 0) { if (q[i] < 0) return false; continue; }
+    const t = q[i] / p[i];
+    if (p[i] < 0) { if (t > t1) return false; if (t > t0) t0 = t; }
+    else { if (t < t0) return false; if (t < t1) t1 = t; }
+  }
+  return true;
+}
+
 function generateMap() {
   const cols = 4, rows = 3;
   const zw = MAP_W / cols, zh = MAP_H / rows;
@@ -84,7 +99,8 @@ class Player {
     this.roundScore = 0;
     this.totalScore = 0;
     this.paint = null; // dataURL (humanos)
-    this.camo = null;  // qualidade 0..1 (bots)
+    this.camo = null;  // camo procedural 0..1 (bots / quem não pintou)
+    this.camoQ = null; // qualidade avaliada da camuflagem 0..1 (pixel match)
     this.ready = false;
     this.lastTagAt = 0;
     // estado interno de bot
@@ -175,7 +191,7 @@ class Room {
     }
     // papéis: ~1 seeker a cada 4, humanos preferem ser hiders na 1a rodada
     const all = [...this.players.values()];
-    for (const p of all) { p.found = false; p.roundScore = 0; p.paint = null; p.camo = null; p.ready = false; p.botTarget = null; p.botChase = null; }
+    for (const p of all) { p.found = false; p.roundScore = 0; p.paint = null; p.camo = null; p.camoQ = null; p.ready = false; p.botTarget = null; p.botChase = null; }
     const nSeekers = Math.max(1, Math.ceil(all.length / 4));
     const shuffled = all.slice().sort(() => Math.random() - 0.5);
     // na primeira rodada, bots viram seekers primeiro; depois é sorteio puro
@@ -217,13 +233,14 @@ class Room {
         if (b.role === 'hider') {
           b.botTarget = this.randomFreeSpot();
           b.camo = rand(0.55, 0.92);
+          b.camoQ = b.camo;
         }
       }
     }
     if (phase === 'hunt') {
       for (const p of this.hiders()) {
         // humanos que não pintaram ganham camo procedural fraca
-        if (!p.bot && !p.paint) { p.camo = 0.4; this.broadcast({ t: 'paintset', id: p.id, camo: p.camo }); }
+        if (!p.bot && !p.paint) { p.camo = 0.4; p.camoQ = 0.4; this.broadcast({ t: 'paintset', id: p.id, camo: p.camo }); }
         // garante camo de todo bot, mesmo que não tenha chegado ao esconderijo a tempo
         if (p.bot && p.camo != null) this.broadcast({ t: 'paintset', id: p.id, camo: p.camo });
       }
@@ -234,7 +251,7 @@ class Room {
         p.totalScore += p.roundScore;
       }
       const results = [...this.players.values()]
-        .map(p => ({ ...p.summary(), paint: p.paint, camo: p.camo, x: p.x, y: p.y }))
+        .map(p => ({ ...p.summary(), paint: p.paint, camo: p.camo, camoQ: p.camoQ, x: p.x, y: p.y }))
         .sort((a, b) => b.roundScore - a.roundScore);
       this.broadcast({ t: 'reveal', results });
     }
@@ -256,6 +273,8 @@ class Room {
       case 'paint':
         if (p.role === 'hider' && typeof msg.data === 'string' && msg.data.length < 300_000) {
           p.paint = msg.data;
+          // qualidade avaliada por pixel no cliente (protótipo: confiamos nele)
+          p.camoQ = Math.max(0, Math.min(1, +msg.q || 0.5));
           p.ready = true;
           this.broadcast({ t: 'paintset', id: p.id, paint: p.paint });
           this.broadcastPlayers();
@@ -303,6 +322,11 @@ class Room {
     return diff < VISION_HALF;
   }
 
+  // tem mobília entre os dois? (cobertura parcial)
+  hasCover(a, b) {
+    return this.map.obstacles.some(o => segIntersectsRect(a.x, a.y, b.x, b.y, o));
+  }
+
   tick() {
     this._tickCount++;
     const now = Date.now();
@@ -319,11 +343,13 @@ class Room {
 
     if (this.phase === 'paint' || this.phase === 'hunt') this.tickBots();
 
-    // pontuação "na cara do perigo": hider vivo dentro de cone de visão ganha 2/s
+    // pontuação "na cara do perigo": só vale linha de visão DIRETA (sem
+    // mobília no meio), e camuflagem melhor rende mais pontos por segundo
     if (this.phase === 'hunt' && this._tickCount % 5 === 0) {
       for (const h of this.hiders()) {
         if (h.found) continue;
-        if (this.seekers().some(s => this.inCone(s, h))) h.roundScore += 1; // 1 a cada 500ms
+        const seen = this.seekers().some(s => this.inCone(s, h) && !this.hasCover(s, h));
+        if (seen) h.roundScore += 1 + Math.round(2 * (h.camoQ != null ? h.camoQ : 0.5));
       }
     }
 
@@ -380,11 +406,13 @@ class Room {
           if (!b.botTarget || this.moveBotTowards(b, b.botTarget.x, b.botTarget.y, SEEKER_SPEED, dt)) {
             b.botTarget = this.randomFreeSpot();
           }
-          // detecção probabilística: quanto pior a camuflagem, mais fácil notar
+          // detecção probabilística: quanto pior a camuflagem, mais fácil
+          // notar; mobília no caminho esconde bastante
           for (const h of this.hiders()) {
             if (h.found || !this.inCone(b, h)) continue;
-            const quality = h.camo != null ? h.camo : 0.65; // humanos pintados: chute médio
-            const p = (1 - quality) * 0.05 + (h.moving ? 0.35 : 0);
+            const quality = h.camoQ != null ? h.camoQ : 0.6;
+            let p = (1 - quality) * 0.05 + (h.moving ? 0.35 : 0);
+            if (this.hasCover(b, h)) p *= 0.25;
             if (Math.random() < p) { b.botChase = h.id; break; }
           }
         }

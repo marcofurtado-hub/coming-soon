@@ -75,6 +75,7 @@ input[type=text]:focus { border-color: #4F9BE8; }
 #paintUI { flex-direction: column; background: #14182620; backdrop-filter: blur(2px); background: rgba(16,19,31,.92); }
 #paintTop { display: flex; justify-content: space-between; width: 100%; padding: max(10px, env(safe-area-inset-top)) 16px 8px; font-size: 13px; color: #9aa3b8; }
 #paintTimer { font-weight: 800; color: #F7C948; }
+#camoScore { font-weight: 800; color: #58B94C; }
 #paintStage { position: relative; flex: 1; width: 100%; display: flex; align-items: center; justify-content: center; min-height: 0; }
 #paintBg, #paintCanvas { position: absolute; border-radius: 18px; }
 #paintCanvas { touch-action: none; }

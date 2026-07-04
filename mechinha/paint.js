@@ -26,6 +26,53 @@ const PaintUI = (() => {
   let onDone = null;
   let pickMode = true;           // abre já no conta-gotas
   let recent = [];               // cores pegadas com o conta-gotas
+  let snapRef = null;            // snapshot atual (pra avaliar a camuflagem)
+
+  // ---- avaliação por pixel: quão perto a pintura está do fundo real ----
+  const QW = 32, QH = 40;
+  const qa = document.createElement('canvas'); qa.width = QW; qa.height = QH;
+  const qb = document.createElement('canvas'); qb.width = QW; qb.height = QH;
+
+  function computeQuality() {
+    if (!snapRef) return 0.5;
+    const S = snapRef.canvas.width;
+    const bh = snapRef.hFrac * S, bw = bh * BEAN_RATIO;
+    const bx = snapRef.cx * S - bw / 2, by = snapRef.cy * S - bh / 2;
+    const ca = qa.getContext('2d');
+    ca.drawImage(snapRef.canvas, bx, by, bw, bh, 0, 0, QW, QH);
+    const cb = qb.getContext('2d');
+    cb.clearRect(0, 0, QW, QH);
+    cb.drawImage(tex, 0, 0, QW, QH);
+    const da = ca.getImageData(0, 0, QW, QH).data;
+    const db = cb.getImageData(0, 0, QW, QH).data;
+    // máscara da cápsula: meia-altura 1, raio 0.8, trecho reto até 0.2
+    const capR = QW / QH, cy0 = 1 - capR;
+    let sum = 0, n = 0;
+    for (let y = 0; y < QH; y++) {
+      for (let xx = 0; xx < QW; xx++) {
+        const nx = ((xx + 0.5) / QW) * 2 - 1;
+        const ny = ((y + 0.5) / QH) * 2 - 1;
+        const ay = Math.abs(ny);
+        let inside;
+        if (ay <= cy0) inside = Math.abs(nx) <= 1;
+        else { const dy = (ay - cy0) / capR; inside = nx * nx + dy * dy <= 1; }
+        if (!inside) continue;
+        const i = (y * QW + xx) * 4;
+        sum += Math.hypot(da[i] - db[i], da[i + 1] - db[i + 1], da[i + 2] - db[i + 2]);
+        n++;
+      }
+    }
+    const avg = n ? sum / n : 441;
+    return Math.max(0, Math.min(1, 1 - avg / 150));
+  }
+
+  function updateMeter() {
+    const q = computeQuality();
+    const el = document.getElementById('camoScore');
+    el.textContent = `🦎 ${Math.round(q * 100)}%`;
+    el.style.color = q > 0.7 ? '#58B94C' : q > 0.4 ? '#F7C948' : '#E8655F';
+    return q;
+  }
 
   function setColor(c) {
     color = c;
@@ -89,6 +136,7 @@ const PaintUI = (() => {
     setColor(c);
     addRecent(c);
     setPickMode(false); // pegou a cor → volta pro pincel
+    if (typeof SFX !== 'undefined') SFX.pick();
   }
 
   bgCanvas.addEventListener('pointerdown', e => {
@@ -170,7 +218,7 @@ const PaintUI = (() => {
     stroke(lastPt, p);
     lastPt = p;
   });
-  const stop = () => { drawing = false; lastPt = null; };
+  const stop = () => { if (drawing) updateMeter(); drawing = false; lastPt = null; };
   fgCanvas.addEventListener('pointerup', stop);
   fgCanvas.addEventListener('pointercancel', stop);
 
@@ -188,15 +236,21 @@ const PaintUI = (() => {
     tctx.fillRect(0, 0, TEX_W, TEX_H);
     tctx.restore();
     render();
+    updateMeter();
+    if (typeof SFX !== 'undefined') SFX.fill();
   };
   document.getElementById('toolClear').onpointerdown = () => {
     tctx.clearRect(0, 0, TEX_W, TEX_H);
     base();
     render();
+    updateMeter();
+    if (typeof SFX !== 'undefined') SFX.tap();
   };
   document.getElementById('btnPaintDone').onclick = () => {
+    const q = computeQuality();
     close();
-    if (onDone) onDone(tex.toDataURL('image/png'));
+    if (typeof SFX !== 'undefined') SFX.done();
+    if (onDone) onDone(tex.toDataURL('image/png'), q);
   };
 
   function base() {
@@ -209,12 +263,13 @@ const PaintUI = (() => {
 
   function open(snap, doneCb) {
     onDone = doneCb;
+    snapRef = snap;
     base();
     renderPalette();
     setColor('#f4f2ec');
     setPickMode(true);
     ui.classList.remove('hidden');
-    requestAnimationFrame(() => layout(snap));
+    requestAnimationFrame(() => { layout(snap); updateMeter(); });
   }
   function close() { ui.classList.add('hidden'); }
   function isOpen() { return !ui.classList.contains('hidden'); }
